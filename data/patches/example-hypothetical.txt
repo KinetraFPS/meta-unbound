@@ -1,0 +1,14 @@
+HYPOTHETICAL example patch notes, for testing the "feed it patch notes" flow. Not real changes.
+
+[ Heroes ]
+- Graves: Base bullet damage reduced by 6%
+- Graves: Grasping Hands - Cooldown increased from 30s to 36s
+- Paige: Max health reduced from 650 to 620
+- Mirage: Bullet damage increased by 7%
+- Mirage: Djinn's Mark - T2 increased from +2 stacks to +3
+- Pocket: Barrage - Cooldown reduced from 30s to 26s
+- Shiv: Slice and Dice - Damage increased from 50 to 60
+- Rem: Lantern - now also grants 10% movement speed
+
+[ Items ]
+- Healbane: Heal reduction increased from 30% to 35%

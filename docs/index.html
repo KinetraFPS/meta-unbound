@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deadlock Meta Auditor</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <h1>Deadlock Meta Auditor</h1>
+    <p id="subtitle" class="muted"></p>
+  </div>
+  <nav id="tabs" role="tablist">
+    <button data-tab="tiers" class="on">Tier list</button>
+    <button data-tab="patch">Patch impact</button>
+    <button data-tab="situations">Situations</button>
+    <button data-tab="matchups">Matchups &amp; synergy</button>
+    <button data-tab="draft">Draft helper</button>
+    <button data-tab="audit">Audit</button>
+  </nav>
+</header>
+
+<main>
+  <section id="tab-tiers" class="tab on">
+    <div class="toolbar">
+      <div class="seg" id="ctx-seg"></div>
+      <input id="hero-filter" type="search" placeholder="Filter heroes or tags…" aria-label="Filter heroes">
+    </div>
+    <p class="explain">Win rate = Bayesian blend of the pre-patch record, the backtested patch prediction, expert claims, and post-patch games. The bar shows the 95% interval; <b>tier range</b> shows where the hero could land as more data arrives. Click a hero for the full evidence trail.</p>
+    <div class="tablewrap"><table id="tier-table" class="grid"></table></div>
+  </section>
+
+  <section id="tab-patch" class="tab">
+    <div id="patch-head"></div>
+    <div class="cols">
+      <div class="card"><h3>Predicted vs observed so far</h3><p class="muted small">Pre-patch win rate (hollow) → model forecast (tick) → post-patch games so far (solid). Heroes the patch touched.</p><div id="patch-dumbbell"></div></div>
+      <div class="card"><h3>Parsed changes</h3><p class="muted small">How the parser read each line. <span class="pill buff">▲ buff</span> <span class="pill nerf">▼ nerf</span> <span class="pill neutral">● neutral/fix</span> <span class="pill unknown">? needs review</span> — correct any line in <code>data/patch-overrides.json</code>.</p><div id="patch-lines"></div></div>
+    </div>
+    <div class="card"><h3>Patch history</h3><div id="patch-history"></div></div>
+  </section>
+
+  <section id="tab-situations" class="tab">
+    <p class="explain">Each cell is the hero's win rate in that situation relative to 50%. Sorted by the selected column — click a header to re-sort.</p>
+    <div class="tablewrap"><table id="sit-table" class="grid heat"></table></div>
+    <div class="card"><h3>Archetype vs archetype (macro view)</h3><p class="muted small">Average matchup lift when a hero tagged with the row archetype faces one tagged with the column archetype. Archetypes are derived from what heroes actually do (net worth, damage taken, assists, objective damage) plus Valve's hero types.</p><div id="arch-matrix"></div></div>
+  </section>
+
+  <section id="tab-matchups" class="tab">
+    <div class="toolbar">
+      <div class="seg" id="pair-seg">
+        <button data-k="counters" class="on">Counters (full game)</button>
+        <button data-k="lane">Lane matchups</button>
+        <button data-k="synergy">Synergy (same team)</button>
+      </div>
+      <select id="pair-hero" aria-label="Focus hero"></select>
+    </div>
+    <p class="explain" id="pair-explain"></p>
+    <div class="cols wide-left">
+      <div class="card"><div id="heatmap"></div><div id="heat-legend" class="legend"></div></div>
+      <div class="card" id="pair-lists"></div>
+    </div>
+  </section>
+
+  <section id="tab-draft" class="tab">
+    <p class="explain">Pick your allies and the enemy team. Candidates are ranked by current strength + matchup lift vs each enemy + synergy lift with each ally. Each part is shown so you can see why.</p>
+    <div class="cols">
+      <div class="card"><h3>Allies <span class="muted small">(up to 5)</span></h3><div id="draft-allies" class="picker"></div></div>
+      <div class="card"><h3>Enemies <span class="muted small">(up to 6)</span></h3><div id="draft-enemies" class="picker"></div></div>
+    </div>
+    <div class="card"><h3>Recommended picks</h3><div id="draft-out"></div></div>
+  </section>
+
+  <section id="tab-audit" class="tab">
+    <div id="audit-stats" class="stats"></div>
+    <div class="cols">
+      <div class="card"><h3>Backtest: did the patch model call it?</h3><p class="muted small">Each dot is one hero change from a past patch. x = predicted win-rate change from the parsed notes, y = what actually happened over the following days.</p><div id="bt-scatter"></div></div>
+      <div class="card"><h3>Where sources disagree</h3><div id="disagree"></div><h3 style="margin-top:20px">Expert claims</h3><div id="experts"></div></div>
+    </div>
+    <div class="cols">
+      <div class="card"><h3>Data coverage</h3><div id="coverage"></div></div>
+      <div class="card"><h3>Model assumptions</h3><div id="assumptions"></div></div>
+    </div>
+  </section>
+</main>
+
+<aside id="drawer" aria-hidden="true"><button id="drawer-close" aria-label="Close">×</button><div id="drawer-body"></div></aside>
+<div id="tip" role="tooltip"></div>
+
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

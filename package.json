@@ -1,0 +1,20 @@
+{
+  "name": "deadlock-meta",
+  "version": "0.1.0",
+  "description": "Audit and visualise the Deadlock meta: patch-aware hero tiers, matchups and synergies with a full evidence trail.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "node src/build.js",
+    "offline": "node src/build.js --offline",
+    "patch": "node src/build.js --patch",
+    "serve": "node src/serve.js",
+    "pages": "node src/build.js && node src/pages.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.6.0"
+  }
+}

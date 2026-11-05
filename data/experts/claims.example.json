@@ -1,0 +1,12 @@
+[
+  {
+    "source": "Coach name or publication",
+    "url": "https://link-to-the-video-or-article",
+    "date": "2026-11-05",
+    "hero": "Baba",
+    "rating": -1,
+    "context": "high",
+    "weight": 1,
+    "note": "Short paraphrase of the claim, not a copied quote"
+  }
+]
