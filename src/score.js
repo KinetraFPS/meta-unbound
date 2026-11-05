@@ -96,7 +96,8 @@ export function pairLift(rows, wrById, { a, b, synergy }) {
     // Expected log-odds: counters → strength difference; synergy → combined strength.
     const expected = synergy ? sigmoid(logit(pa) + logit(pb)) : sigmoid(logit(pa) - logit(pb));
     const obs = shrink(r.wins, r.matches_played, cfg.pairShrinkGames, expected);
-    out.push({ a: ha, b: hb, n: r.matches_played, wr: r.wins / r.matches_played, expected, lift: obs - expected });
+    const r4 = (x) => Math.round(x * 1e4) / 1e4;
+    out.push({ a: ha, b: hb, n: r.matches_played, wr: r4(r.wins / r.matches_played), expected: r4(expected), lift: r4(obs - expected) });
   }
   return out;
 }

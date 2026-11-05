@@ -26,6 +26,14 @@ The rule-based parser handles "X increased from A to B" well but guesses on qual
 * **Is it worth it?** With `--llm` the Audit tab also replays the rules-only parser and shows both backtests side by side (r, direction accuracy, error), so you can see whether the LLM actually improves forecasts. Lines where the rules and the LLM disagree are listed there too.
 * Requests use `fallbacks: "default"`, so if a safety classifier ever declines a request, the API retries it on a fallback model. If a request fails (bad key, outage), the run continues with rule-based verdicts and skips the LLM for the rest of that run.
 
+## What's in the dashboard
+
+* **Meta** — tier board (or sortable table, or per-situation view) with risers, fallers and most-banned heroes since the patch. Filter by role, buffed/nerfed, or tag.
+* **Hero pages** (`#/hero/<id>/build`, shareable) — meta build, why the hero is rated where they are, matchups, synergy and full patch history.
+* **Meta builds** — for every hero, all ranks and Oracle+: core items in average buy order (timeline + per phase), hidden gems, traps, build identity (weapon/vitality/spirit share), and the most-played ability upgrade order. Items are judged against the hero's other items *of the same price tier*, because winning teams can afford more items and raw item win rates would mislead.
+* **Patch impact**, **Matchups** (clickable heatmap), **Draft helper**, **Audit** (backtest, disagreements, assumptions).
+* Global hero search (press `/`), situation picker, light/dark toggle.
+
 ## How it works
 
 ```

@@ -14,6 +14,7 @@ import { backtest } from './impact.js';
 import { scoreContext, expertShifts, pairLift, deriveTags, archetypeMatrix } from './score.js';
 import { pp, shrink } from './stats.js';
 import { createLlmClassifier } from './llmClassifier.js';
+import { collectBuilds, itemDictionary, buildConfig } from './builds.js';
 
 const args = process.argv.slice(2);
 const flag = (n) => args.includes(`--${n}`);
@@ -30,7 +31,9 @@ async function main() {
     // Don't trust in_development: newly released heroes keep that flag while live. Heroes without
     // any match data are dropped later by the scorer.
     .filter((h) => h.player_selectable && !h.disabled);
-  const items = (await get('/v1/assets/items', {}, { offline, ttlHours: 24 })).filter((i) => i.type === 'upgrade');
+  const allItems = await get('/v1/assets/items', {}, { offline, ttlHours: 24 });
+  const itemById = Object.fromEntries(allItems.map((i) => [i.id, i]));
+  const items = allItems.filter((i) => i.type === 'upgrade');
   const heroNames = heroes.map((h) => h.name), itemNames = items.map((i) => i.name);
   const heroIdByName = Object.fromEntries(heroes.map((h) => [h.name, h.id]));
 
@@ -108,6 +111,16 @@ async function main() {
   const tags = deriveTags(heroes, byCtx, theory);
   const archetypes = archetypeMatrix(counters, tags);
 
+  log('▸ Meta builds (items + ability order, all ranks and Oracle+)');
+  const builds = await collectBuilds({ heroes, items: itemById, from: preFrom, offline, log });
+  const itemDict = itemDictionary(builds, itemById);
+
+  // Every balance line that touched each hero, newest patch first (for the hero page's history).
+  const heroHistory = {};
+  for (const p of [...timeline, ...(current.custom ? [current] : [])].reverse())
+    for (const c of p.changes) if (c.kind === 'hero' && heroIdByName[c.target])
+      (heroHistory[heroIdByName[c.target]] ??= []).push({ p: p.id, t: p.title, d: c.direction, l: c.line.replace(/^[-•*]\s*[^:]+:\s*/, '') });
+
   // Audit: places where sources disagree.
   const disagreements = [];
   for (const r of byCtx.all) {
@@ -129,6 +142,7 @@ async function main() {
     contexts: Object.fromEntries(Object.entries(cfg.contexts).map(([k, v]) => [k, { label: v.label, ...rawCtx[k] }])),
     heroes: heroes.map((h) => ({ id: h.id, name: h.name, type: h.hero_type, img: h.images?.icon_image_small_webp || h.images?.icon_image_small, complexity: h.complexity })),
     tiers: byCtx, tags, counters, lane, synergy: syn, archetypes,
+    builds, items: itemDict, heroHistory, buildConfig, buildWindow: preFrom.toISOString(),
     experts: Object.fromEntries(Object.entries(experts).map(([k, v]) => [k, { ...v, shift: pp(v.shift) }])),
     backtest: bt,
     backtestRules: btRules && { r: btRules.r, signAccuracy: btRules.signAccuracy, maeModelPp: btRules.maeModelPp, maeNaivePp: btRules.maeNaivePp, n: btRules.n, k: btRules.k },
