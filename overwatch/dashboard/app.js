@@ -114,7 +114,7 @@
   document.addEventListener('keydown', (e) => { if (e.key === '/' && !/input|select|textarea/i.test(document.activeElement.tagName)) { e.preventDefault(); search.focus(); } });
 
   // ---------- router ----------
-  const parse = () => { const p = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean); return { route: p[0] || 'meta', a: p[1], b: p[2] }; };
+  const parse = () => { const p = location.hash.replace(/^#\/?/, '').split('?')[0].split('/').filter(Boolean); return { route: p[0] || 'meta', a: p[1], b: p[2] }; };
   let lastKey = '';
   function render() {
     const { route, a, b } = parse();
@@ -389,25 +389,65 @@
     $$('.cols3 tbody', view).forEach((tb) => tb.addEventListener('click', (e) => { const tr = e.target.closest('tr.row'); if (tr && !e.target.closest('a')) location.hash = heroLink(tr.dataset.k, 'maps'); }));
   }
 
-  // ========== PATCH ==========
+  // ========== PATCH IMPACT ==========
+  const IMP = D.impact || { measured: [], backtest: null, need: 12, have: 0 };
+  const BT = IMP.backtest;
+  const sizeWord = (s) => { const a = Math.abs(s); return a >= 0.3 ? 'Large' : a >= 0.12 ? 'Medium' : a > 0.02 ? 'Small' : 'Tiny'; };
+  function forecastBar(s, max) {
+    const w = Math.min(Math.abs(s) / max, 1) * 48;
+    return `<svg viewBox="0 0 100 12" preserveAspectRatio="none" style="width:100%;height:12px;display:block" aria-hidden="true"><line x1="50" x2="50" y1="0" y2="12" stroke="var(--axis)"/><rect x="${s >= 0 ? 50 : 50 - w}" y="2" width="${w}" height="8" rx="1.5" fill="${s >= 0 ? 'var(--pos-2)' : 'var(--neg-2)'}"/></svg>`;
+  }
   function viewPatch() {
     if (!latest) { view.innerHTML = '<div class="card"><p class="empty">No balance patches found.</p></div>'; return; }
     const pick = new URLSearchParams(location.hash.split('?')[1] || '').get('p');
     const P = D.patches.find((p) => p.id === pick) || latest;
+    const M = IMP.measured.find((m) => m.id === P.id);
     const heroesIn = [...new Set(P.changes.map((c) => c.t))].sort((a, b) => H[a].role.localeCompare(H[b].role) || H[a].name.localeCompare(H[b].name));
     const S = Object.values(P.summary);
+    const rows = Object.entries(P.summary).filter(([k]) => H[k]).map(([k, s]) => ({ k, s, now: rowOf(k), m: M?.measured ? M.heroes[k] : null, t: D.trend?.patch === P.id ? trendOf(k) : null })).sort((a, b) => b.s.s - a.s.s);
+    const maxS = Math.max(0.3, ...rows.map((r) => Math.abs(r.s.s)));
+    const mctx = M?.measured ? M.ctx.split('|') : null;
+    const fc = (r) => (BT?.k ? `${sgn(BT.k * r.s.s)}pp` : r.s.s > 0.02 ? `${sizeWord(r.s.s)} buff` : r.s.s < -0.02 ? `${sizeWord(r.s.s)} nerf` : r.s.v === 'rework' ? 'Unclear' : 'Neutral');
+    const actual = (r) => (r.m ? `<span class="${cls(r.m.d)}" ${tipAttr(`${p1(r.m.wrB)} on ${M.before} → ${p1(r.m.wrA)} on ${M.after}<br><span class=r>${esc(D.config.platforms[mctx[0]] || mctx[0])}, ${esc(D.config.regions[mctx[1]] || mctx[1])}, ${esc(DIV_LABEL(mctx[2]))}</span>`)}>${sgn(r.m.d)}pp</span>`
+      : r.t ? `<span class="${cls(r.t[0])}">${sgn(r.t[0])}pp</span>` : '<span class="muted" title="No snapshot from before this patch yet">not measured yet</span>');
+    const right = (r) => { const obs = r.m?.d ?? r.t?.[0]; if (obs == null || Math.abs(r.s.s) <= 0.02) return ''; return Math.sign(obs) === Math.sign(r.s.s) ? '<span class="up" title="Moved the way the patch notes suggested">✓</span>' : '<span class="down" title="Moved against the patch notes">✗</span>'; };
+    let btCard;
+    if (BT) {
+      const pts = BT.points.filter((p) => p.predicted != null);
+      const W = 460, Hh = 280, Pd = 36, ext = Math.max(2, ...pts.flatMap((p) => [Math.abs(p.predicted), Math.abs(p.observed)])) * 1.1;
+      const x = (v) => Pd + ((v + ext) / (2 * ext)) * (W - Pd - 8), y = (v) => 8 + ((ext - v) / (2 * ext)) * (Hh - Pd - 8);
+      btCard = `<div class="stats" style="margin-bottom:10px">${[['Correlation (r)', BT.r.toFixed(2), `${BT.n} past hero changes`], ['Direction right', `${Math.round(BT.signAccuracy * 100)}%`, 'buffs went up, nerfs went down'], ['Avg error', BT.maeModel != null ? `${BT.maeModel.toFixed(2)}pp` : '–', `vs ${BT.maeNaive.toFixed(2)}pp assuming "no change"`]].map(([l, v, h]) => `<div class="stat"><div class="l">${l}</div><div class="v">${v}</div><div class="h">${esc(h)}</div></div>`).join('')}</div>
+        ${pts.length ? `<svg viewBox="0 0 ${W} ${Hh}" width="100%" role="img" aria-label="Predicted vs actual win-rate change"><line x1="${x(-ext)}" y1="${y(-ext)}" x2="${x(ext)}" y2="${y(ext)}" stroke="var(--muted)" stroke-dasharray="4 4"/><line x1="${x(0)}" x2="${x(0)}" y1="8" y2="${Hh - Pd}" stroke="var(--axis)"/><line x1="${Pd}" x2="${W - 8}" y1="${y(0)}" y2="${y(0)}" stroke="var(--axis)"/>
+          ${pts.map((p) => `<circle cx="${x(p.predicted)}" cy="${y(p.observed)}" r="5" fill="${Math.sign(p.predicted) === Math.sign(p.observed) ? 'var(--accent)' : 'var(--neg-2)'}" stroke="var(--surface)" stroke-width="2" ${tipAttr(`<b>${esc(H[p.hero]?.name || p.hero)}</b> · ${esc(p.patch)}<br>Predicted ${sgn(p.predicted)}pp · actual ${sgn(p.observed)}pp`)}/>`).join('')}
+          <text x="${(W + Pd) / 2}" y="${Hh - 6}" text-anchor="middle" font-size="11" fill="var(--ink-2)">Predicted change (pp)</text><text transform="translate(12,${(Hh - Pd) / 2}) rotate(-90)" text-anchor="middle" font-size="11" fill="var(--ink-2)">Actual change (pp)</text></svg>
+          <div class="legend"><span><i class="sw" style="background:var(--accent);border-radius:50%"></i>Direction right</span><span><i class="sw" style="background:var(--neg-2);border-radius:50%"></i>Direction wrong</span><span class="muted">· dashed = perfect prediction</span></div>` : ''}`;
+    } else {
+      const done = Math.min(100, Math.round((IMP.have / IMP.need) * 100));
+      btCard = `<p style="margin-top:0;color:var(--ink-2)">Not enough history yet: <b>${IMP.have} of ${IMP.need}</b> hero changes have been measured before and after a patch.</p>
+        <div class="slotbar" style="height:10px" role="progressbar" aria-valuenow="${done}" aria-valuemin="0" aria-valuemax="100"><i style="width:${done}%;background:var(--accent)"></i></div>
+        <p class="muted small">Blizzard only publishes today's numbers, so history is built two ways: a <b>daily snapshot</b> saved automatically, and <b>copies of Blizzard's stats page from the Internet Archive</b> (checked on every build; only Competitive copies are used). Once a patch has a snapshot from before it and one from at least 3 days after, its heroes show their real change above. Once ${IMP.need} changes are measured, the forecast is tested here and turned into win-rate points, like the Deadlock site.</p>`;
+    }
     view.innerHTML = `
-      <div class="section-head"><div><h1>${esc(P.title)}</h1><p>Blizzard's patch notes, read line by line into buffs and nerfs. Stadium-only changes are left out.</p></div>
-        <label class="ctx-pick">Patch <select id="patch-sel">${[...D.patches].reverse().map((p) => `<option value="${p.id}" ${p.id === P.id ? 'selected' : ''}>${esc(p.title.replace(/^Overwatch Retail Patch Notes – /, ''))}</option>`).join('')}</select></label></div>
+      <div class="section-head"><div><h1>Patch impact</h1><p>${esc(P.title)} · what changed, what the patch notes suggest, and what's actually happened. Stadium-only changes are left out.</p></div>
+        <label class="ctx-pick">Patch <select id="patch-sel">${[...D.patches].reverse().map((p) => `<option value="${p.id}" ${p.id === P.id ? 'selected' : ''}>${esc(p.title.replace(/^Overwatch Retail Patch Notes – /, ''))}${IMP.measured.find((m) => m.id === p.id)?.measured ? ' ✓' : ''}</option>`).join('')}</select></label></div>
       <div class="stats">
         <div class="stat"><div class="l">Heroes buffed</div><div class="v up">${S.filter((s) => s.v === 'buff').length}</div></div>
         <div class="stat"><div class="l">Heroes nerfed</div><div class="v down">${S.filter((s) => s.v === 'nerf').length}</div></div>
         <div class="stat"><div class="l">Mixed / rework</div><div class="v">${S.filter((s) => !['buff', 'nerf'].includes(s.v)).length}</div></div>
         <div class="stat"><div class="l">Lines needing judgement</div><div class="v" style="color:var(--warn)">${P.changes.filter((c) => c.d === null).length}</div><div class="h">of ${P.changes.length} · reworks, perk swaps</div></div>
-        <div class="stat"><div class="l">Since this patch</div><div class="v" style="font-size:16px">${D.trend && D.trend.patch === P.id ? 'Tracking' : 'Not tracked yet'}</div><div class="h">${D.trend && D.trend.patch === P.id ? `snapshots ${D.trend.from} → ${D.trend.to}` : 'needs a snapshot from before the patch'}</div></div></div>
-      ${heroesIn.map((k) => { const r = rowOf(k); const t = trendOf(k); return `<div class="card"><h3 style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">${heroCell(k, 'history')} ${verdictPill(P.summary[k])} <span class="tag"><span class="role-dot ${H[k].role}"></span>${ROLE_LABEL[H[k].role]}</span>${r ? `<span class="muted small">now ${p1(r.wr)} win · tier ${r.tier}${t && D.trend.patch === P.id ? ` · <span class="${cls(t[0])}">${sgn(t[0])}pp since patch</span>` : ''}</span>` : ''}</h3>
-        ${P.dev?.[k] ? `<div class="dev"><b>Blizzard:</b> ${esc(P.dev[k])}</div>` : ''}${P.changes.filter((c) => c.t === k).map(changeRow).join('')}</div>`; }).join('')}`;
+        <div class="stat"><div class="l">Measured?</div><div class="v" style="font-size:16px">${M?.measured ? 'Yes' : D.trend?.patch === P.id ? 'Partly' : 'Not yet'}</div><div class="h">${M?.measured ? `${M.before} → ${M.after}` : M?.before ? `have ${M.before}; waiting for 3 days after` : 'no snapshot from before this patch'}</div></div></div>
+      <div class="card"><h3>Forecast vs reality</h3><p class="muted small" style="margin-top:0">Patch-note push = how strongly the notes buff or nerf each hero (bigger bar = bigger change). ${BT?.k ? 'The forecast converts that into win-rate points using the backtest below.' : 'It stays a size (small / medium / large) until there is enough history to convert it into win-rate points.'} "Now" uses your platform, region and rank selection.</p>
+        <div class="tablewrap"><table class="grid"><thead><tr><th>Hero</th><th>Change</th><th style="width:26%">Patch-note push</th><th>Forecast</th><th class="r">Now</th><th class="r">Actual change</th><th></th></tr></thead><tbody>
+        ${rows.map((r) => `<tr class="row" data-k="${r.k}"><td>${heroCell(r.k, 'history')}</td><td>${verdictPill(r.s)}</td><td ${tipAttr(`Patch-note score ${r.s.s} · ${r.s.b} buff line(s), ${r.s.n} nerf line(s)${r.s.u ? `, ${r.s.u} unclear` : ''}`)}>${forecastBar(r.s.s, maxS)}</td><td>${fc(r)}</td>
+          <td class="r">${r.now ? `${p1(r.now.wr)} <span class="tier ${r.now.tier}" style="width:20px;height:20px;font-size:11px;vertical-align:-4px">${r.now.tier}</span>` : '–'}</td><td class="r">${actual(r)}</td><td>${right(r)}</td></tr>`).join('')}</tbody></table></div></div>
+      <div class="cols" style="margin-top:16px">
+        <div class="card"><h3>Does the patch-note reading work for Overwatch?</h3>${btCard}</div>
+        <div class="card"><h3>Patch history</h3><div class="tablewrap"><table class="grid"><thead><tr><th>Date</th><th>Buffed</th><th>Nerfed</th><th>Measured</th></tr></thead><tbody>${[...D.patches].reverse().map((p) => { const ss = Object.entries(p.summary); const mm = IMP.measured.find((m) => m.id === p.id); return `<tr><td><a href="#/patch?p=${p.id}">${esc(p.id)}</a></td><td style="white-space:normal">${ss.filter(([, s]) => s.v === 'buff').map(([k]) => (H[k] ? `<a class="tag" href="${heroLink(k, 'history')}">${esc(H[k].name)}</a>` : '')).join('')}</td><td style="white-space:normal">${ss.filter(([, s]) => s.v === 'nerf').map(([k]) => (H[k] ? `<a class="tag" href="${heroLink(k, 'history')}">${esc(H[k].name)}</a>` : '')).join('')}</td><td>${mm?.measured ? '<span class="up">✓</span>' : '<span class="muted">–</span>'}</td></tr>`; }).join('')}</tbody></table></div></div></div>
+      <h2 style="margin:20px 0 8px">Every change in this patch</h2>
+      ${heroesIn.map((k) => `<div class="card"><h3 style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">${heroCell(k, 'history')} ${verdictPill(P.summary[k])} <span class="tag"><span class="role-dot ${H[k].role}"></span>${ROLE_LABEL[H[k].role]}</span></h3>
+        ${P.dev?.[k] ? `<div class="dev"><b>Blizzard:</b> ${esc(P.dev[k])}</div>` : ''}${P.changes.filter((c) => c.t === k).map(changeRow).join('')}</div>`).join('')}`;
     $('#patch-sel').addEventListener('change', (e) => { location.hash = `#/patch?p=${e.target.value}`; });
+    $('tbody', view).addEventListener('click', (e) => { const tr = e.target.closest('tr.row'); if (tr && !e.target.closest('a')) location.hash = heroLink(tr.dataset.k, 'history'); });
   }
 
   // ========== ABOUT / AUDIT ==========

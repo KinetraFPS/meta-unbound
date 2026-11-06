@@ -10,6 +10,7 @@ import cfg from './config.js';
 import { fetchCached } from './fetch.js';
 import { loadPatches } from './patchNotes.js';
 import { ensureCounters, loadPrivate } from './counters.js';
+import { backfill } from './backfill.js';
 
 const offline = process.argv.includes('--offline');
 const log = (...m) => console.log(...m);
@@ -78,7 +79,17 @@ async function main() {
   // (Blizzard only publishes the current numbers, not history).
   fs.mkdirSync(SNAP_DIR, { recursive: true });
   const today = new Date().toISOString().slice(0, 10);
-  if (!offline) fs.writeFileSync(path.join(SNAP_DIR, `${today}.json`), JSON.stringify({ date: today, stats }));
+  if (!offline) {
+    // Merge (don't overwrite): an archive backfill may already have put data in today's file.
+    const f = path.join(SNAP_DIR, `${today}.json`);
+    const prev = fs.existsSync(f) ? JSON.parse(fs.readFileSync(f, 'utf8')) : { stats: {} };
+    for (const [k, byDiv] of Object.entries(stats)) prev.stats[k] = { ...(prev.stats[k] || {}), ...byDiv };
+    fs.writeFileSync(f, JSON.stringify({ date: today, stats: prev.stats, source: 'live' }));
+  }
+  if (!offline && !process.argv.includes('--no-backfill')) {
+    log('▸ Archive backfill (history for Patch impact)');
+    await backfill({ fromDate: patches[0]?.id, log });
+  }
   const snaps = fs.readdirSync(SNAP_DIR).filter((f) => f.endsWith('.json')).sort().map((f) => JSON.parse(fs.readFileSync(path.join(SNAP_DIR, f), 'utf8')));
   // Main patch of the latest batch (a big patch plus any hotfixes within a week).
   const newest = patches.at(-1);
@@ -94,6 +105,38 @@ async function main() {
     }
   }
 
+  // ---- Patch impact: measured before/after changes per patch, and a backtest of the buff/nerf reading ----
+  const DAY = 864e5;
+  const PREFER = [['pc|americas', 'all'], ['pc|europe', 'all'], ['pc|asia', 'all'], ['console|americas', 'all']];
+  const measured = patches.map((p, i) => {
+    const next = patches[i + 1];
+    const before = [...snaps].reverse().find((s) => s.date < p.id && Date.parse(p.id) - Date.parse(s.date) <= 21 * DAY);
+    const after = snaps.find((s) => Date.parse(s.date) >= Date.parse(p.id) + 3 * DAY && (!next || s.date < next.id));
+    if (!before || !after) return { id: p.id, measured: false, before: before?.date ?? null };
+    const both = [];
+    for (const k of Object.keys(after.stats)) for (const d of Object.keys(after.stats[k])) if (before.stats[k]?.[d]) both.push([k, d]);
+    const ctx = PREFER.find(([k, d]) => both.some((x) => x[0] === k && x[1] === d)) || both.find((x) => x[1] === 'all') || both[0];
+    if (!ctx) return { id: p.id, measured: false, before: before.date };
+    const [k, d] = ctx, B = before.stats[k][d], A = after.stats[k][d];
+    const heroes = {};
+    for (const [h, s] of Object.entries(p.summary)) if (B[h] && A[h]) heroes[h] = { s: s.score, wrB: B[h][0], wrA: A[h][0], d: +(A[h][0] - B[h][0]).toFixed(2) };
+    return { id: p.id, measured: true, ctx: `${k}|${d}`, before: before.date, after: after.date, heroes };
+  });
+  const pts = measured.flatMap((m) => (m.measured ? Object.entries(m.heroes).filter(([, x]) => x.s !== 0).map(([h, x]) => ({ patch: m.id, hero: h, score: x.s, observed: x.d })) : []));
+  let backtest = null;
+  if (pts.length >= 12) {
+    const num = pts.reduce((s, x) => s + x.score * x.observed, 0), den = pts.reduce((s, x) => s + x.score ** 2, 0);
+    const k = num > 0 && den > 0 ? num / den : null;
+    const mean = (xs) => xs.reduce((s, v) => s + v, 0) / xs.length;
+    const mx = mean(pts.map((x) => x.score)), my = mean(pts.map((x) => x.observed));
+    const r = pts.reduce((s, x) => s + (x.score - mx) * (x.observed - my), 0) / Math.sqrt(pts.reduce((s, x) => s + (x.score - mx) ** 2, 0) * pts.reduce((s, x) => s + (x.observed - my) ** 2, 0) || 1);
+    backtest = { n: pts.length, k, r: +r.toFixed(3), signAccuracy: +(pts.filter((x) => Math.sign(x.score) === Math.sign(x.observed)).length / pts.length).toFixed(3),
+      maeModel: k ? +mean(pts.map((x) => Math.abs(x.observed - k * x.score))).toFixed(3) : null, maeNaive: +mean(pts.map((x) => Math.abs(x.observed))).toFixed(3),
+      points: pts.map((x) => ({ ...x, predicted: k ? +(k * x.score).toFixed(2) : null })) };
+  }
+  const impact = { measured, backtest, need: 12, have: pts.length };
+  log(`▸ Patch impact: ${measured.filter((m) => m.measured).length}/${patches.length} patches measured, ${pts.length} hero changes${backtest ? `, backtest r=${backtest.r}` : ' (backtest needs 12)'}`);
+
   const slimChange = (c) => ({ t: c.target, a: c.ability, l: c.line.replace(/^[-•*]\s*[^:]+:\s*/, ''), d: c.direction, m: c.magnitude, c: c.confidence, r: c.reason });
   const out = {
     generated: new Date().toISOString(),
@@ -101,7 +144,7 @@ async function main() {
     kits, maps: maps.map((m) => ({ key: m.key, name: m.name, mode: m.gamemodes.find((g) => cfg.mapModes.includes(g)), img: m.screenshot, location: m.location })),
     stats, mapStats,
     patches: patches.map((p) => ({ id: p.id, title: p.title, date: p.date, changes: p.changes.filter((c) => c.kind === 'hero').map(slimChange), summary: Object.fromEntries(Object.entries(p.summary).map(([k, s]) => [k, { v: s.verdict, s: s.score, b: s.buffs, n: s.nerfs, u: s.unknown }])), dev: p.dev })),
-    trend, snapshots: snaps.map((s) => s.date), cwLinks,
+    trend, impact, snapshots: snaps.map((s) => s.date), cwLinks,
     config: { platforms: cfg.platforms, regions: cfg.regions, divisions: cfg.divisions, shrinkPick: cfg.shrinkPick, tiers: cfg.tiers.map((t) => ({ tier: t.tier, z: Number.isFinite(t.z) ? t.z : -99 })), gamemode: cfg.gamemode },
     calls,
   };

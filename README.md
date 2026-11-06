@@ -36,6 +36,7 @@ node overwatch/build.js        # fetch stats + patch notes → dist-ow/ (served 
 
 * **Data:** Blizzard's official Hero Statistics (win/pick/ban rate) via the community [OverFast API](https://overfast-api.tekrop.fr), competitive role queue, for every platform × region × rank (Bronze–Grandmaster) and per map; hero kits and perks from OverFast; patch notes and developer comments from Blizzard's patch-notes pages (Stadium-only changes excluded).
 * **Views:** role-column tier board (tiers are relative within Tank / Damage / Support), win rate by rank, best maps per hero, strongest lineup per map, kit & perks, patch history with Blizzard's developer comments.
+* **Patch impact:** each changed hero's patch-note forecast next to their current win rate, and the real before/after change once history exists. History comes from a daily snapshot (`.github/workflows/daily-refresh.yml` runs every day on GitHub) plus copies of Blizzard's stats page from the Internet Archive (`overwatch/backfill.js`, Competitive copies only). After 12 measured hero changes, the forecast is backtested and shown in win-rate points, like Deadlock.
 * **Limits:** no public source has Overwatch matchups, synergies or perk stats, and Blizzard publishes no game counts (rarely picked heroes are pulled toward 50% instead) or history. Each build saves a daily snapshot in `data/overwatch/snapshots/`; once snapshots straddle a patch, "since the patch" changes appear automatically.
 
 ### Overwatch matchups (personal copy only)
