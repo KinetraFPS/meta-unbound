@@ -56,6 +56,7 @@ Locally you get a **Matchups** tab: pick the enemy team and get the best answers
 * **Meta** — tier board (or sortable table, or per-situation view) with risers, fallers and most-banned heroes since the patch. Filter by role, buffed/nerfed, or tag.
 * **Hero pages** (`#/hero/<id>/build`, shareable) — meta build, why the hero is rated where they are, matchups, synergy and full patch history.
 * **Meta builds** — for every hero, all ranks and Oracle+: core items in average buy order (timeline + per phase), hidden gems, traps, build identity (weapon/vitality/spirit share), and the most-played ability upgrade order. Items are judged against the hero's other items *of the same price tier*, because winning teams can afford more items and raw item win rates would mislead.
+* **How to beat them** (hero pages) and **items to buy vs the enemy team** (Draft helper), from an E6 player's item matchup guide in `data/guides/deadlock-item-counters.json` (transcribed by KinetraFPS). Each recommended item gets a rough data check: its win rate in real games against that hero vs its usual win rate. Edit the JSON to add or correct entries.
 * **Patch impact**, **Matchups** (clickable heatmap), **Draft helper**, **Audit** (backtest, disagreements, assumptions).
 * Global hero search (press `/`), situation picker, light/dark toggle.
 

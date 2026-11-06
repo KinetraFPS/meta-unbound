@@ -259,3 +259,19 @@ table.heat td.h.cell-pos-3, table.heat td.h.cell-pos-2, table.heat td.h.cell-neg
 .game-switch a + a { border-left: 1px solid var(--border); }
 .game-switch a.on { background: var(--ink); color: var(--surface); font-weight: 600; }
 
+
+/* ---------- expert item-counter guide ---------- */
+.gsec h3 { margin-bottom: 10px; }
+.gsec.warn { border-left: 4px solid var(--neg-2); }
+.gentry { display: grid; grid-template-columns: minmax(0, auto) 1fr; gap: 14px; align-items: center; padding: 10px 0; border-top: 1px solid var(--grid); }
+.gentry:first-of-type { border-top: 0; padding-top: 0; }
+.gentry p { margin: 0; color: var(--ink-2); }
+.gitems { display: flex; flex-wrap: wrap; gap: 8px; }
+.gitem { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.gitem.generic { justify-content: center; min-width: 90px; padding: 8px; border-radius: 9px; background: var(--surface-2); text-align: center; }
+.gitem .gname { font-weight: 600; font-size: 12px; }
+.dcheck { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 99px; background: var(--surface-2); white-space: nowrap; cursor: help; }
+.dlist { display: grid; gap: 10px; }
+.drow { display: grid; grid-template-columns: 90px 1fr; gap: 12px; align-items: start; padding: 8px 0; border-top: 1px solid var(--grid); }
+.drow:first-child { border-top: 0; }
+@media (max-width: 600px) { .gentry { grid-template-columns: 1fr; } }

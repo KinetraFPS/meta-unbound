@@ -109,18 +109,27 @@ async function main() {
   const DAY = 864e5;
   const PREFER = [['pc|americas', 'all'], ['pc|europe', 'all'], ['pc|asia', 'all'], ['console|americas', 'all']];
   const measured = patches.map((p, i) => {
-    const next = patches[i + 1];
-    const before = [...snaps].reverse().find((s) => s.date < p.id && Date.parse(p.id) - Date.parse(s.date) <= 21 * DAY);
-    const after = snaps.find((s) => Date.parse(s.date) >= Date.parse(p.id) + 3 * DAY && (!next || s.date < next.id));
-    if (!before || !after) return { id: p.id, measured: false, before: before?.date ?? null };
-    const both = [];
-    for (const k of Object.keys(after.stats)) for (const d of Object.keys(after.stats[k])) if (before.stats[k]?.[d]) both.push([k, d]);
-    const ctx = PREFER.find(([k, d]) => both.some((x) => x[0] === k && x[1] === d)) || both.find((x) => x[1] === 'all') || both[0];
-    if (!ctx) return { id: p.id, measured: false, before: before.date };
-    const [k, d] = ctx, B = before.stats[k][d], A = after.stats[k][d];
+    // The window ends at the next MAJOR patch (10+ hero lines). Small hotfixes in between only exclude
+    // the specific heroes they touched, so one hotfix doesn't hide a whole balance patch.
+    const nextMajor = patches.slice(i + 1).find((q) => q.changes.length >= 10);
+    const end = nextMajor ? Date.parse(nextMajor.id) : Infinity;
+    const befores = snaps.filter((s) => s.date < p.id && Date.parse(p.id) - Date.parse(s.date) <= 21 * DAY);
+    const afters = snaps.filter((s) => Date.parse(s.date) >= Date.parse(p.id) + 3 * DAY && Date.parse(s.date) < end && Date.parse(s.date) - Date.parse(p.id) <= 28 * DAY);
+    // Pick the before/after pair that shares a platform/region/rank, preferring all-ranks PC and the
+    // closest dates (less time = fewer other things changing).
+    let best = null;
+    for (const b of befores) for (const a of afters) for (const k of Object.keys(a.stats)) for (const d of Object.keys(a.stats[k])) {
+      if (!b.stats[k]?.[d]) continue;
+      const pref = PREFER.findIndex(([pk, pd]) => pk === k && pd === d);
+      const score = (pref < 0 ? (d === 'all' ? 10 : 20) : pref) * 100 + (Date.parse(a.date) - Date.parse(b.date)) / DAY;
+      if (!best || score < best.score) best = { b, a, k, d, score };
+    }
+    if (!best) return { id: p.id, measured: false, before: befores.at(-1)?.date ?? null };
+    const { b, a, k, d } = best, B = b.stats[k][d], A = a.stats[k][d];
+    const touchedLater = new Set(patches.slice(i + 1).filter((q) => q.id < a.date).flatMap((q) => Object.keys(q.summary)));
     const heroes = {};
-    for (const [h, s] of Object.entries(p.summary)) if (B[h] && A[h]) heroes[h] = { s: s.score, wrB: B[h][0], wrA: A[h][0], d: +(A[h][0] - B[h][0]).toFixed(2) };
-    return { id: p.id, measured: true, ctx: `${k}|${d}`, before: before.date, after: after.date, heroes };
+    for (const [h, s] of Object.entries(p.summary)) if (B[h] && A[h] && !touchedLater.has(h)) heroes[h] = { s: s.score, wrB: B[h][0], wrA: A[h][0], d: +(A[h][0] - B[h][0]).toFixed(2) };
+    return { id: p.id, measured: Object.keys(heroes).length > 0, ctx: `${k}|${d}`, before: b.date, after: a.date, heroes, excluded: [...touchedLater].filter((h) => p.summary[h]) };
   });
   const pts = measured.flatMap((m) => (m.measured ? Object.entries(m.heroes).filter(([, x]) => x.s !== 0).map(([h, x]) => ({ patch: m.id, hero: h, score: x.s, observed: x.d })) : []));
   let backtest = null;

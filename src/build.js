@@ -15,6 +15,7 @@ import { scoreContext, expertShifts, pairLift, deriveTags, archetypeMatrix } fro
 import { pp, shrink } from './stats.js';
 import { createLlmClassifier } from './llmClassifier.js';
 import { collectBuilds, itemDictionary, buildConfig } from './builds.js';
+import { buildGuide } from './guides.js';
 
 const args = process.argv.slice(2);
 const flag = (n) => args.includes(`--${n}`);
@@ -115,6 +116,11 @@ async function main() {
   const builds = await collectBuilds({ heroes, items: itemById, from: preFrom, offline, log });
   const itemDict = itemDictionary(builds, itemById);
 
+  log('▸ Expert item-counter guide + data check');
+  const guide = await buildGuide({ heroes, itemById, from: preFrom, offline, log });
+  // Make sure every item the guide mentions has a name/icon in the dashboard dictionary.
+  if (guide) for (const es of Object.values(guide.heroes)) for (const e of es) for (const x of e.items) for (const y of [x, ...(x.examples || [])]) if (y.id && !itemDict[y.id]) { const it = itemById[y.id]; itemDict[y.id] = { name: it.name, cost: it.cost ?? null, slot: it.item_slot_type ?? null, tier: it.item_tier ?? null, img: it.shop_image_webp || it.image_webp || it.image || null, active: !!it.is_active_item, type: it.type }; }
+
   // Every balance line that touched each hero, newest patch first (for the hero page's history).
   const heroHistory = {};
   for (const p of [...timeline, ...(current.custom ? [current] : [])].reverse())
@@ -142,7 +148,7 @@ async function main() {
     contexts: Object.fromEntries(Object.entries(cfg.contexts).map(([k, v]) => [k, { label: v.label, ...rawCtx[k] }])),
     heroes: heroes.map((h) => ({ id: h.id, name: h.name, type: h.hero_type, img: h.images?.icon_image_small_webp || h.images?.icon_image_small, complexity: h.complexity })),
     tiers: byCtx, tags, counters, lane, synergy: syn, archetypes,
-    builds, items: itemDict, heroHistory, buildConfig, buildWindow: preFrom.toISOString(),
+    builds, items: itemDict, guide, heroHistory, buildConfig, buildWindow: preFrom.toISOString(),
     experts: Object.fromEntries(Object.entries(experts).map(([k, v]) => [k, { ...v, shift: pp(v.shift) }])),
     backtest: bt,
     backtestRules: btRules && { r: btRules.r, signAccuracy: btRules.signAccuracy, maeModelPp: btRules.maeModelPp, maeNaivePp: btRules.maeNaivePp, n: btRules.n, k: btRules.k },

@@ -1,0 +1,235 @@
+{
+  "source": {
+    "title": "Item matchup guide",
+    "author": "an Eternus 6 (E6) Deadlock player",
+    "transcribedBy": "KinetraFPS",
+    "note": "A cleaned-up transcription of the guide's recommendations, not an independent in-game test of every interaction. Adapt to enemy builds, team composition and what your teammates have already bought."
+  },
+  "principles": [
+    "Counter-items are valuable because they disrupt an enemy's game plan, keep you alive and let you keep contributing damage.",
+    "Don't blindly prioritise damage. If a defensive or utility item stops you being disabled or killed, it can be worth more than another damage purchase.",
+    "Consider your team's composition and avoid overlap. Carries should make sure they can protect themselves; teammates can cover the extra utility counters.",
+    "Indomitable is generally useful in a 1v1 against a hero whose crowd control triggers it, unless a matchup note says otherwise. Unstoppable is a strong alternative, especially against several threats.",
+    "Timing matters. Some counters must be activated before an ability lands; others cleanse an effect after it has been applied."
+  ],
+  "generic": {
+    "anti-heal": { "label": "Anti-heal", "examples": ["Healbane", "Toxic Bullets", "Decay"] },
+    "spirit-resistance": { "label": "Spirit resistance", "examples": ["Spirit Resilience", "Spirit Shielding"] },
+    "Debuff Remover": { "label": "Debuff Remover", "note": "Named this way in the guide. The current item list has Debuff Reducer, not Debuff Remover, so check which effect is meant." },
+    "Anvil": { "label": "Anvil", "note": "Mentioned in the guide but not found in the current item list." },
+    "Parry": { "label": "Parry", "note": "A melee mechanic, not an item." }
+  },
+  "heroes": {
+    "Abrams": [
+      { "type": "counter", "items": ["Rebuttal", "Juggernaut"], "why": "Help against his melee-focused pressure." },
+      { "type": "counter", "items": ["Decay", "Toxic Bullets"], "why": "Reduce his ability to sustain himself and punish his large health pool." },
+      { "type": "counter", "items": ["Warp Stone"], "why": "Helps evade his charge or slam engagement." },
+      { "type": "warning", "items": ["Indomitable"], "why": "Don't rely on Indomitable to stop his charge sequence: the charge's initial stun and the separate stun from hitting a wall are distinct interactions." }
+    ],
+    "Apollo": [
+      { "type": "counter", "items": ["Slowing Hex"], "why": "Strongly limits his kit; the guide describes it as shutting down three of his four abilities." },
+      { "type": "situational", "items": ["Slowing Hex", "Silence Wave"], "why": "If he has Debuff Remover, consider a second Slowing Hex from a teammate, or Silence Wave." },
+      { "type": "counter", "items": ["Counterspell"], "why": "Recommended against his ultimate." },
+      { "type": "counter", "items": ["Spellbreaker"], "why": "Helps against his spirit burst." }
+    ],
+    "Bebop": [
+      { "type": "counter", "items": ["Indomitable"], "why": "Protects against the first hook." },
+      { "type": "counter", "items": ["Unstoppable"], "why": "Useful if you need to escape after being hooked." },
+      { "type": "counter", "items": ["Warp Stone"], "why": "Can break line of sight and avoid follow-up damage." },
+      { "type": "counter", "items": ["Counterspell", "Dispel Magic"], "why": "Counter his bomb setup, depending on the timing and the effect you're dealing with." }
+    ],
+    "Billy": [
+      { "type": "counter", "items": ["Rebuttal"], "why": "Useful against his melee pressure." },
+      { "type": "counter", "items": ["Slowing Hex"], "why": "Can interrupt Rising Ram and limit his escape." },
+      { "type": "counter", "items": ["Counterspell", "Unstoppable", "Ethereal Shift"], "why": "Options for dealing with his ultimate." },
+      { "type": "counter", "items": ["Dispel Magic"], "why": "Removes the Wrecked debuff." }
+    ],
+    "Calico": [
+      { "type": "counter", "items": ["Slowing Hex", "Silence Wave"], "why": "Restrict her mobility and ability usage." },
+      { "type": "counter", "items": ["Cursed Relic"], "why": "Useful against her mobility-based game plan." }
+    ],
+    "Celeste": [
+      { "type": "counter", "items": ["Slowing Hex"], "why": "Helps stop her escaping and can ground her." },
+      { "type": "counter", "items": ["Knockdown"], "why": "Useful against her mobility." },
+      { "type": "counter", "items": ["Dispel Magic"], "why": "Removes Light Eater." },
+      { "type": "situational", "items": ["Disarming Hex"], "why": "Against a gun-focused Celeste." }
+    ],
+    "The Doorman": [
+      { "type": "warning", "items": ["Slowing Hex"], "why": "Don't buy Slowing Hex to stop the door: it doesn't work, because the door isn't treated as a movement ability." },
+      { "type": "counter", "items": ["Silence Wave"], "why": "Silence Wave or other crowd control can disrupt his ability usage." },
+      { "type": "counter", "items": ["Cursed Relic"], "why": "Removes Cheat Death." },
+      { "type": "counter", "items": ["Warp Stone", "Unstoppable", "Counterspell"], "why": "Options for dealing with his ultimate and escaping its effects." }
+    ],
+    "Drifter": [
+      { "type": "counter", "items": ["Dispel Magic"], "why": "Use immediately when marked to remove the debuff and prevent the Toxic Bullets interaction." },
+      { "type": "counter", "items": ["Counterspell"], "why": "Useful against his telegraphed ultimate." },
+      { "type": "counter", "items": ["Disarming Hex"], "why": "Reduces his gun pressure." },
+      { "type": "counter", "items": ["Divine Barrier"], "why": "Protects against his ultimate." },
+      { "type": "caveat", "items": ["Metal Skin"], "why": "Helps against his gun damage and stacks, but doesn't remove the debuff or its procs." }
+    ],
+    "Dynamo": [
+      { "type": "counter", "items": ["Unstoppable", "Ethereal Shift"], "why": "Options for surviving or escaping his ultimate." },
+      { "type": "ally", "items": ["Rescue Beam"], "why": "Can pull an ally out of his ultimate." },
+      { "type": "warning", "items": ["Indomitable"], "why": "Not the answer to his ultimate; the guide specifically warns it doesn't work for this interaction." }
+    ],
+    "Graves": [
+      { "type": "counter", "items": ["Ricochet"], "why": "Useful against the skulls and ghouls." },
+      { "type": "counter", "items": ["Dispel Magic"], "why": "Removes the wall-related debuff and Toxic Bullets effects." },
+      { "type": "counter", "items": ["Return Fire"], "why": "Can destroy skulls with the right timing." }
+    ],
+    "Grey Talon": [
+      { "type": "counter", "items": ["Rusted Barrel"], "why": "Useful early in the game." },
+      { "type": "counter", "items": ["Slowing Hex", "Knockdown"], "why": "Limit his mobility and repositioning." },
+      { "type": "counter", "items": ["Spellbreaker"], "why": "Useful later against his spirit damage." }
+    ],
+    "Haze": [
+      { "type": "counter", "items": ["Indomitable"], "why": "A strong defensive option against her crowd control." },
+      { "type": "counter", "items": ["Plated Armor"], "why": "Stops her building up stacks through sustained gunfire." },
+      { "type": "caveat", "items": ["Metal Skin"], "why": "Temporary protection from gun damage, but doesn't remove stacks already applied." },
+      { "type": "caveat", "items": ["Cursed Relic"], "why": "Cursed Relic can remove Metal Skin, so don't assume Metal Skin's active protection is guaranteed to last." }
+    ],
+    "Holliday": [
+      { "type": "caveat", "items": ["Indomitable"], "why": "Triggers when Spirit Lasso hits you and grants a barrier. It doesn't stop the lasso connecting; the first lasso damage can land before the barrier." },
+      { "type": "counter", "items": ["Counterspell", "Unstoppable"], "why": "Alternatives if you can react to the lasso in time." },
+      { "type": "counter", "items": ["spirit-resistance"], "why": "Helps against her barrel damage." },
+      { "type": "counter", "items": ["Plated Armor"], "why": "Useful against her gun damage. The lasso can also give her a shield in a 1v1." },
+      { "type": "counter", "items": ["Slowing Hex"], "why": "Counters her jump-pad mobility." }
+    ],
+    "Infernus": [
+      { "type": "counter", "items": ["Dispel Magic"], "why": "High priority for removing his burn." },
+      { "type": "counter", "items": ["Counterspell", "Warp Stone"], "why": "Help deal with his ultimate." },
+      { "type": "counter", "items": ["Plated Armor", "Juggernaut"], "why": "Help against his damage and buildup." }
+    ],
+    "Ivy": [
+      { "type": "situational", "items": ["Dispel Magic", "Metal Skin"], "why": "Against High Docker's gun Ivy build (High Docker is a player/creator — this means that specific build)." },
+      { "type": "situational", "items": ["Counterspell", "Unstoppable"], "why": "Against the other Ivy build: recommended against Stone Form." }
+    ],
+    "Kelvin": [
+      { "type": "counter", "items": ["Slowing Hex"], "why": "Use before Path activates to prevent or limit the escape." },
+      { "type": "counter", "items": ["Knockdown"], "why": "Can knock an airborne Kelvin through Path." },
+      { "type": "counter", "items": ["Silence Wave"], "why": "Useful against his ultimate." },
+      { "type": "counter", "items": ["anti-heal"], "why": "Helps against the healing from his dome." },
+      { "type": "counter", "items": ["Ethereal Shift"], "why": "Can help you survive inside the dome." }
+    ],
+    "Lady Geist": [
+      { "type": "counter", "items": ["Decay"], "why": "Particularly useful against her low-health playstyle." },
+      { "type": "counter", "items": ["Silence Wave", "Silencer"], "why": "Limit her ability to use her kit." },
+      { "type": "counter", "items": ["Dispel Magic"], "why": "Removes her drain." },
+      { "type": "counter", "items": ["Counterspell"], "why": "Recommended against her ultimate." },
+      { "type": "situational", "items": ["Metal Skin", "Plated Armor"], "why": "Against a late-game, gun-focused Lady Geist." }
+    ],
+    "Lash": [
+      { "type": "counter", "items": ["Spirit Resilience", "Enchanter's Emblem"], "why": "Help mitigate his spirit damage." },
+      { "type": "counter", "items": ["Ethereal Shift"], "why": "Particularly strong: can nullify the damage from his slam." },
+      { "type": "counter", "items": ["Indomitable", "Unstoppable", "Counterspell"], "why": "Other options for dealing with his ultimate." },
+      { "type": "counter", "items": ["Slowing Hex"], "why": "Helps limit his mobility." },
+      { "type": "counter", "items": ["Anvil"], "why": "Another option mentioned in the guide." }
+    ],
+    "McGinnis": [
+      { "type": "counter", "items": ["Monster Rounds", "Cultist Sacrifice"], "why": "Make her turrets easier to kill; both affect summons and turrets." },
+      { "type": "caveat", "items": ["Knockdown"], "why": "Bring several knockdowns or stuns: her Indomitable can absorb the first crowd control, so one disable may not be enough." }
+    ],
+    "Mina": [
+      { "type": "caveat", "items": ["Slowing Hex"], "why": "Can be removed by Debuff Remover; coordinate with a teammate to reapply it if needed." },
+      { "type": "counter", "items": ["Silence Wave", "Cursed Relic"], "why": "Alternative ways to restrict her." },
+      { "type": "warning", "items": ["Knockdown"], "why": "Not very effective because of the timing window her bat ability creates." }
+    ],
+    "Mirage": [
+      { "type": "counter", "items": ["Dispel Magic"], "why": "Removes the beetle effect, damage reduction, marks and tornado lift." },
+      { "type": "situational", "items": ["Unstoppable"], "why": "Recommended against the Quad Tornado build." },
+      { "type": "caveat", "items": ["Slowing Hex"], "why": "Can help, but may need two applications if he has Debuff Remover." }
+    ],
+    "Mo & Krill": [
+      { "type": "counter", "items": ["Counterspell"], "why": "Difficult to time, but potentially very effective." },
+      { "type": "counter", "items": ["Indomitable", "Unstoppable"], "why": "Options for dealing with their crowd control." },
+      { "type": "counter", "items": ["Toxic Bullets", "Decay"], "why": "Help counter their healing." },
+      { "type": "counter", "items": ["Debuff Reducer"], "why": "Reduces the impact of their ultimate." }
+    ],
+    "Paige": [
+      { "type": "counter", "items": ["Dispel Magic"], "why": "Removes her knockdown and root effects." },
+      { "type": "counter", "items": ["Unstoppable"], "why": "An alternative for dealing with her crowd control." },
+      { "type": "warning", "items": ["Knockdown"], "why": "She can cleanse it with Dispel Magic, so don't rely on it as a guaranteed disable." }
+    ],
+    "Paradox": [
+      { "type": "counter", "items": ["Indomitable"], "why": "Useful against her ultimate specifically. Carbine does not trigger it." },
+      { "type": "counter", "items": ["Dispel Magic"], "why": "Removes her damage-amplification stacks." }
+    ],
+    "Pocket": [
+      { "type": "caveat", "items": ["Slowing Hex"], "why": "Stops him taking his cloak, but not throwing it." },
+      { "type": "counter", "items": ["Silence Wave", "Cursed Relic"], "why": "Prevent him entering Briefcase." },
+      { "type": "counter", "items": ["Counterspell"], "why": "Recommended against his ultimate." },
+      { "type": "counter", "items": ["Divine Barrier"], "why": "Another defensive option." }
+    ],
+    "Rem": [
+      { "type": "counter", "items": ["anti-heal"], "why": "Important against her healing." },
+      { "type": "counter", "items": ["Dispel Magic"], "why": "Removes her telegraphed stun and Toxic Bullets effects." },
+      { "type": "ally", "items": ["Knockdown"], "why": "An ally can use it against her ultimate." },
+      { "type": "counter", "items": ["Disarming Hex"], "why": "Reduces her gun pressure." }
+    ],
+    "Seven": [
+      { "type": "counter", "items": ["Dispel Magic"], "why": "Removes his stun and Toxic Bullets effects." },
+      { "type": "ally", "items": ["Knockdown"], "why": "An ally can use it against his ultimate." },
+      { "type": "counter", "items": ["Unstoppable"], "why": "Forces him to account for you ignoring his crowd control." },
+      { "type": "counter", "items": ["Disarming Hex"], "why": "Helps against his gun damage." }
+    ],
+    "Shiv": [
+      { "type": "counter", "items": ["Dispel Magic"], "why": "Removes his debuffs." },
+      { "type": "counter", "items": ["Spellbreaker"], "why": "Reduces his burst damage and how long its effects last." },
+      { "type": "counter", "items": ["anti-heal"], "why": "Limits his sustain." }
+    ],
+    "Silver": [
+      { "type": "counter", "items": ["Return Fire"], "why": "Useful against his human-form gun damage." },
+      { "type": "counter", "items": ["Metal Skin"], "why": "Useful against his wolf-form damage." },
+      { "type": "counter", "items": ["Warp Stone"], "why": "Helps escape his dash." },
+      { "type": "counter", "items": ["Disarming Hex"], "why": "Limits his claw attacks." },
+      { "type": "counter", "items": ["Slowing Hex"], "why": "Stops him chasing with his dash." }
+    ],
+    "Sinclair": [
+      { "type": "counter", "items": ["Slowing Hex"], "why": "Counters his teleport." },
+      { "type": "counter", "items": ["Knockdown"], "why": "Useful against his ultimate." },
+      { "type": "situational", "items": ["Unstoppable"], "why": "Can be useful depending on the ultimate interaction." },
+      { "type": "counter", "items": ["Spellbreaker"], "why": "Helps against his bolts." }
+    ],
+    "Venator": [
+      { "type": "counter", "items": ["Metal Skin"], "why": "Recommended against Venator's gun damage." }
+    ],
+    "Victor": [
+      { "type": "counter", "items": ["Metal Skin"], "why": "Blocks his gun damage and ultimate." },
+      { "type": "counter", "items": ["Disarming Hex"], "why": "Stops him shooting while it lasts." }
+    ],
+    "Vindicta": [
+      { "type": "counter", "items": ["Knockdown"], "why": "Brings her down when airborne." },
+      { "type": "counter", "items": ["Slowing Hex"], "why": "Limits her ability to fly away." },
+      { "type": "counter", "items": ["Phantom Strike"], "why": "Another way to engage and catch her." },
+      { "type": "caveat", "items": [], "why": "Buying these counters can force her to spend on Debuff Remover, Counterspell or Unstoppable." }
+    ],
+    "Viscous": [
+      { "type": "counter", "items": ["Cursed Relic"], "why": "Removes his Cube buff." },
+      { "type": "counter", "items": ["Rebuttal"], "why": "Useful against Puddle Punch." },
+      { "type": "counter", "items": ["Parry"], "why": "A successful parry gives a 30% damage-amplification window." }
+    ],
+    "Vyper": [
+      { "type": "counter", "items": ["Return Fire"], "why": "Useful against her bullets." },
+      { "type": "counter", "items": ["Metal Skin", "Disarming Hex"], "why": "Mitigate or interrupt her gun pressure." },
+      { "type": "counter", "items": ["Knockdown"], "why": "Useful against her mobility." },
+      { "type": "counter", "items": ["Dispel Magic"], "why": "Removes her poison." },
+      { "type": "counter", "items": ["Indomitable"], "why": "Helps against her stun." }
+    ],
+    "Warden": [
+      { "type": "counter", "items": ["Dispel Magic", "Unstoppable"], "why": "Options for dealing with his cage." },
+      { "type": "counter", "items": ["Metal Skin", "Plated Armor"], "why": "Help against his gun damage." },
+      { "type": "counter", "items": ["anti-heal"], "why": "Useful against his ultimate." }
+    ],
+    "Wraith": [
+      { "type": "counter", "items": ["Unstoppable"], "why": "Use after the ultimate connects to escape the effect." },
+      { "type": "counter", "items": ["Plated Armor"], "why": "Helps against her card buildup." },
+      { "type": "warning", "items": ["Dispel Magic"], "why": "Does not remove her ultimate." }
+    ],
+    "Yamato": [
+      { "type": "counter", "items": ["Dispel Magic"], "why": "Removes the debuff from her second ability." },
+      { "type": "counter", "items": ["spirit-resistance"], "why": "Helps mitigate her spirit damage." },
+      { "type": "counter", "items": ["Cursed Relic", "Silencer", "Silence Wave"], "why": "Can stop her activating her ultimate." },
+      { "type": "counter", "items": ["Counterspell"], "why": "Useful against her telegraphed damage." }
+    ]
+  }
+}

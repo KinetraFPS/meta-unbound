@@ -213,7 +213,7 @@
     const order = rows().map((x) => x.id), i = order.indexOf(id);
     const prev = order[(i - 1 + order.length) % order.length], next = order[(i + 1) % order.length];
     const d = r.posterior - r.preWR;
-    const subs = [['build', 'Meta build'], ['overview', 'Why this rating'], ['matchups', 'Matchups'], ['synergy', 'Synergy'], ['history', 'Patch history']];
+    const subs = [['build', 'Meta build'], ['counter', 'How to beat them'], ['overview', 'Why this rating'], ['matchups', 'Matchups'], ['synergy', 'Synergy'], ['history', 'Patch history']];
     view.innerHTML = `
       <div class="card">
         <div class="hero-head">
@@ -237,7 +237,7 @@
       <div id="hero-body"></div>`;
     view.querySelectorAll('.ctx-strip button').forEach((b) => b.addEventListener('click', () => setCtx(b.dataset.c)));
     const body = $('#hero-body');
-    ({ build: heroBuild, overview: heroOverview, matchups: heroMatchups, synergy: heroSynergy, history: heroHistory }[sub] || heroBuild)(body, id, r);
+    ({ build: heroBuild, counter: heroCounterItems, overview: heroOverview, matchups: heroMatchups, synergy: heroSynergy, history: heroHistory }[sub] || heroBuild)(body, id, r);
   }
 
   // ----- build -----
@@ -380,6 +380,55 @@
         <div><span>Objective damage</span><b>${Math.round(pm.objDamage).toLocaleString()}</b></div>
         <div><span>Accuracy</span><b>${pct(pm.accuracy)}</b></div>
         <div><span>Last hits</span><b>${Math.round(pm.lastHits)}</b></div></div>` : '<p class="empty">No data.</p>'}</div></div>`;
+  }
+
+  // ----- expert item-counter guide -----
+  const G = M.guide;
+  const GROUPS = [
+    ['counter', 'Buy these', ''],
+    ['situational', 'Depends on their build', ''],
+    ['ally', 'Good for a teammate to buy', ''],
+    ['caveat', 'Good to know', ''],
+    ['warning', "Don't rely on", 'warn'],
+  ];
+  // Data check: item win rate in games vs this enemy, compared with its usual rate (enemy strength removed).
+  function checkBadge(enemyId, itemId) {
+    const c = G?.checks?.[enemyId]?.[itemId];
+    if (!c) return '';
+    const v = c.lift * 100;
+    const [label, cl] = v >= 0.5 ? ['data agrees', 'up'] : v <= -0.5 ? ['data doesn\'t show it', 'down'] : ['no clear signal', 'muted'];
+    return `<span class="dcheck ${cl}" ${tipAttr(`<b>Data check</b> — in games against ${esc(H[enemyId].name)}, buyers of ${esc(M.items[itemId]?.name || '')} win ${pct(c.wr)} vs their usual ${pct(c.usual)} (${sgn(v, 2)}pp after removing how strong ${esc(H[enemyId].name)} is overall).<br><span class=r>${c.n.toLocaleString()} games. Counter items are often bought when already losing to that hero, so win rates understate them — treat this as a rough sanity check.</span>`)}>${label}</span>`;
+  }
+  function guideItem(x, enemyId) {
+    if (x.id) return `<div class="gitem">${itemEl(x.id)}${checkBadge(enemyId, x.id)}</div>`;
+    const ex = x.examples?.length ? `<div class="muted small">e.g. ${x.examples.map((e) => esc(e.name)).join(', ')}</div>` : '';
+    return `<div class="gitem generic" ${x.note ? tipAttr(esc(x.note)) : ''}><div class="gname">${esc(x.name)}${x.note ? ' <span class="muted">ⓘ</span>' : ''}</div>${ex}</div>`;
+  }
+  function heroCounterItems(body, id) {
+    const entries = G?.heroes?.[id];
+    const head = `<div class="card"><div class="section-head" style="margin:0"><div><h2>How to beat ${esc(H[id].name)}</h2><p>Counter items from ${esc(G?.source.author || 'an expert')}'s item matchup guide${G?.source.transcribedBy ? `, transcribed by ${esc(G.source.transcribedBy)}` : ''}. Each item also gets a rough <b>data check</b> from real matches against ${esc(H[id].name)}.</p></div></div>
+      ${help('General item-buying principles', `<ul style="margin:0;padding-left:18px">${(G?.principles || []).map((p) => `<li>${esc(p)}</li>`).join('')}</ul><p class="muted small">${esc(G?.source.note || '')}</p>`)}</div>`;
+    if (!entries) { body.innerHTML = head + `<div class="card"><p class="empty">The guide doesn't cover ${esc(H[id].name)} yet. Add an entry for them in <code>data/guides/deadlock-item-counters.json</code>.</p></div>`; return; }
+    body.innerHTML = head + GROUPS.map(([type, label, cls2]) => {
+      const es = entries.filter((e) => e.type === type);
+      if (!es.length) return '';
+      return `<div class="card gsec ${cls2}"><h3>${label}</h3>${es.map((e) => `<div class="gentry"><div class="gitems">${e.items.map((x) => guideItem(x, id)).join('') || ''}</div><p>${esc(e.why)}</p></div>`).join('')}</div>`;
+    }).join('');
+  }
+  // Items to buy against a set of enemies (used by the Draft helper).
+  function draftItems(enemyIds) {
+    if (!G || !enemyIds.length) return '';
+    const agg = new Map(), warn = [];
+    for (const e of enemyIds) for (const en of G.heroes[e] || []) {
+      if (en.type === 'warning') { warn.push({ e, en }); continue; }
+      if (!['counter', 'situational'].includes(en.type)) continue;
+      for (const x of en.items) { const key = x.id || x.generic; if (!key) continue; const a = agg.get(key) || { x, reasons: [] }; a.reasons.push({ e, why: en.why, type: en.type }); agg.set(key, a); }
+    }
+    const list = [...agg.values()].sort((a, b) => new Set(b.reasons.map((r) => r.e)).size - new Set(a.reasons.map((r) => r.e)).size || (M.items[a.x.id]?.cost || 0) - (M.items[b.x.id]?.cost || 0)).slice(0, 12);
+    const uncovered = enemyIds.filter((e) => !G.heroes[e]);
+    return `<div class="card"><h3>Items to buy against this enemy team</h3><p class="muted small" style="margin-top:0">From the E6 item matchup guide, ranked by how many of the enemies each item answers. Hover an item for its cost; open a hero's “How to beat them” tab for the full notes.${uncovered.length ? ` Not in the guide: ${uncovered.map((e) => esc(H[e].name)).join(', ')}.` : ''}</p>
+      ${list.length ? `<div class="dlist">${list.map((a) => { const n = new Set(a.reasons.map((r) => r.e)).size; return `<div class="drow">${guideItem(a.x, a.reasons[0].e)}<div><b>${n > 1 ? `Answers ${n} enemies` : `Vs ${esc(H[a.reasons[0].e].name)}`}</b>${a.reasons.map((r) => `<div class="small"><span class="muted">${esc(H[r.e].name)}${r.type === 'situational' ? ' (depends on build)' : ''}:</span> ${esc(r.why)}</div>`).join('')}</div></div>`; }).join('')}</div>` : '<p class="empty">The guide has no item counters for these heroes yet.</p>'}
+      ${warn.length ? `<div class="gsec warn" style="margin-top:12px"><h3 style="font-size:13px">Don't rely on</h3>${warn.map(({ e, en }) => `<div class="small" style="margin:4px 0"><b>${en.items.map((x) => esc(x.name)).join(' / ')}</b> vs ${esc(H[e].name)}: ${esc(en.why)}</div>`).join('')}</div>` : ''}</div>`;
   }
 
   // ----- matchups / synergy -----
@@ -527,7 +576,8 @@
           let x0 = 0; const parts = [[c.base, 'var(--series-1)'], [c.vsS, 'var(--series-2)'], [c.wiS, 'var(--series-3)']].map(([v, col]) => { const w = (Math.abs(v) / max) * 100; const s = `<rect x="${x0}" width="${Math.max(w - 1, 0)}" height="10" rx="1.5" fill="${col}" ${v < 0 ? 'opacity=".35"' : ''}/>`; x0 += w; return s; }).join('');
           const keys = [...c.vs.map((v) => ({ n: 'vs ' + H[v.e].name, l: v.l })), ...c.wi.map((w) => ({ n: '+ ' + H[w.a].name, l: w.l }))].sort((a, b) => Math.abs(b.l) - Math.abs(a.l)).slice(0, 3);
           return `<tr class="row" data-id="${c.id}"><td>${i + 1}</td><td>${heroCell(c.id)}</td><td class="r"><b>${sgn(c.total, 2)}</b></td><td class="r">${sgn(c.base, 2)}</td><td class="r">${enemies.size ? sgn(c.vsS, 2) : '–'}</td><td class="r">${allies.size ? sgn(c.wiS, 2) : '–'}</td><td><svg width="160" height="10">${parts}</svg></td><td>${keys.map((k) => `<span class="tag ${k.l > 0 ? 'up' : 'down'}">${esc(k.n)} ${sgn(k.l)}</span>`).join('')}</td></tr>`; }).join('')}</tbody></table></div>
-        <div class="legend"><span><i class="sw" style="background:var(--series-1)"></i>Strength (pp vs 50%)</span><span><i class="sw" style="background:var(--series-2)"></i>vs enemies</span><span><i class="sw" style="background:var(--series-3)"></i>with team</span><span class="muted">· faded = negative</span></div></div>`;
+        <div class="legend"><span><i class="sw" style="background:var(--series-1)"></i>Strength (pp vs 50%)</span><span><i class="sw" style="background:var(--series-2)"></i>vs enemies</span><span><i class="sw" style="background:var(--series-3)"></i>with team</span><span class="muted">· faded = negative</span></div></div>
+      ${draftItems([...enemies])}`;
     const save = () => { store.set('allies', [...allies]); store.set('enemies', [...enemies]); };
     view.querySelectorAll('.picker').forEach((p) => p.addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b || b.disabled) return; const set = p.dataset.set === 'a' ? allies : enemies; const id = +b.dataset.id; set.has(id) ? set.delete(id) : set.add(id); save(); viewDraft(); }));
     view.querySelectorAll('[data-rm]').forEach((b) => b.addEventListener('click', () => { (b.dataset.rm === 'a' ? allies : enemies).delete(+b.dataset.id); save(); viewDraft(); }));
