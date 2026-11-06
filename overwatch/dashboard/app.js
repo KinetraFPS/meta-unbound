@@ -209,7 +209,7 @@
     const i = roleRows.findIndex((x) => x.k === k), n = roleRows.length;
     const prev = roleRows[(i - 1 + n) % n]?.k, next = roleRows[(i + 1) % n]?.k;
     const s = patchOf(k), t = trendOf(k);
-    const subs = [['overview', 'Overview'], ['maps', 'Best maps'], ['kit', 'Kit & perks'], ['history', 'Patch history']];
+    const subs = [['overview', 'Overview'], ['maps', 'Best maps'], ['counters', 'Counters'], ['kit', 'Kit & perks'], ['history', 'Patch history']];
     view.innerHTML = `
       <div class="card"><div class="hero-head">${avatar(h, 'portrait')}
         <div><h1>${esc(h.name)} ${r ? `<span class="tier ${r.tier}" style="vertical-align:3px">${r.tier}</span>` : ''}</h1>
@@ -220,7 +220,15 @@
       <div class="subtabs">${subs.map(([s2, l]) => `<a href="${heroLink(k, s2)}" class="${s2 === sub ? 'on' : ''}">${l}</a>`).join('')}</div>
       <div id="hero-body"></div>`;
     $$('.ctx-strip button', view).forEach((b) => b.addEventListener('click', () => { sel.div = b.dataset.d; $('#sel-div').value = sel.div; store.set('div', sel.div); render(); }));
-    ({ overview: heroOverview, maps: heroMaps, kit: heroKit, history: heroHistory }[sub] || heroOverview)($('#hero-body'), k);
+    ({ overview: heroOverview, maps: heroMaps, counters: heroCounters, kit: heroKit, history: heroHistory }[sub] || heroOverview)($('#hero-body'), k);
+  }
+  function heroCounters(body, k) {
+    const slug = D.cwLinks?.[k], name = esc(H[k].name);
+    body.innerHTML = `<div class="card"><h3>Who counters ${name}, and who ${name} counters</h3>
+      <p style="margin-top:0;color:var(--ink-2);max-width:760px">Blizzard doesn't publish hero-vs-hero data. The only public source is <b>Counterwatch</b>, which builds matchups from kill feeds in games played by its app users. Their terms only allow personal, non-commercial use, so their data isn't copied here. Open ${name}'s page on their site instead:</p>
+      ${slug ? `<div class="ext-links"><a href="https://www.counterwatch.gg/stats/overwatch/counters/${esc(slug)}" target="_blank" rel="noopener">${name} counters on Counterwatch ↗</a><a class="alt" href="https://www.counterwatch.gg/stats/overwatch/best-duos/${esc(slug)}" target="_blank" rel="noopener">Best duos with ${name} ↗</a></div>`
+        : `<div class="ext-links"><a href="https://www.counterwatch.gg/stats/overwatch" target="_blank" rel="noopener">Counterwatch hero stats ↗</a></div><p class="muted small">No dedicated Counterwatch page found for ${name} yet.</p>`}
+      <p class="muted small" style="margin-bottom:0">How to read their numbers: a counter rating of 0 is an even matchup; positive means the first hero wins the duels; around ±7 is already a strong counter.</p></div>`;
   }
   function dotChart(points, label) { // points: [{label, v, sub}]
     if (!points.length) return '<p class="empty">No data.</p>';
@@ -273,6 +281,7 @@
   }
 
   // ========== MAPS ==========
+  let mapMode = '';
   function viewMaps(mapKey) {
     const avail = D.maps.filter((m) => D.mapStats[pk()]?.[m.key]);
     if (!avail.length) { view.innerHTML = '<div class="card"><p class="empty">No map data for this platform/region.</p></div>'; return; }
@@ -285,12 +294,21 @@
     const modes = [...new Set(avail.map((x) => x.mode))].sort();
     const roleTable = (role) => `<div class="card"><h3><span class="role-dot ${role}"></span>${ROLE_LABEL[role]}</h3><div class="tablewrap"><table class="grid"><thead><tr><th>Hero</th><th class="r">Win</th><th class="r">Pick</th><th class="r" ${tipAttr('Rating on this map minus the hero\'s overall rating')}>vs usual</th></tr></thead><tbody>${scored.filter((r) => r.role === role).sort((a, b) => b.adj - a.adj).map((r) => `<tr class="row" data-k="${r.k}"><td>${heroCell(r.k, 'maps')}</td><td class="r">${p1(r.wr)}</td><td class="r">${p1(r.pick)}</td><td class="r ${cls(r.d, 0.3)}">${sgn(r.d)}</td></tr>`).join('')}</tbody></table></div></div>`;
     view.innerHTML = `
-      <div class="section-head"><div><h1>${esc(m.name)}</h1><p>${esc(cap(m.mode))}${m.location ? ' · ' + esc(m.location) : ''} · ${esc(D.config.platforms[sel.platform])}, ${esc(D.config.regions[sel.region])}, all ranks (Blizzard doesn't split maps by rank). Pick another map below.</p></div></div>
+      <div class="card map-picker">
+        <div class="toolbar" style="margin-bottom:10px">
+          <label class="ctx-pick"><span><b>Map</b></span><select id="map-sel" aria-label="Choose a map">${modes.map((mode) => `<optgroup label="${esc(cap(mode))}">${avail.filter((x) => x.mode === mode).sort((a, b) => a.name.localeCompare(b.name)).map((x) => `<option value="${x.key}" ${x.key === m.key ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</optgroup>`).join('')}</select></label>
+          <div class="seg" id="mode-filter"><button data-m="" class="${!mapMode ? 'on' : ''}">All modes</button>${modes.map((mode) => `<button data-m="${mode}" class="${mapMode === mode ? 'on' : ''}">${esc(cap(mode))}</button>`).join('')}</div>
+        </div>
+        <div class="map-strip" id="map-strip">${avail.filter((x) => !mapMode || x.mode === mapMode).sort((a, b) => a.mode.localeCompare(b.mode) || a.name.localeCompare(b.name)).map((x) => `<a class="map-card ${x.key === m.key ? 'on' : ''}" href="#/maps/${x.key}" style="background-image:url('${esc(x.img)}')" ${x.key === m.key ? 'aria-current="true"' : ''}><span>${esc(x.name)}<small>${esc(x.mode)}</small></span></a>`).join('')}</div>
+      </div>
+      <div class="section-head"><div><h1>${esc(m.name)}</h1><p>${esc(cap(m.mode))}${m.location ? ' · ' + esc(m.location) : ''} · ${esc(D.config.platforms[sel.platform])}, ${esc(D.config.regions[sel.region])}, all ranks (Blizzard doesn't split maps by rank).</p></div></div>
       <div class="card"><h3>Strongest lineup on ${esc(m.name)}</h3><p class="muted small" style="margin-top:0">The highest-rated tank, two damage and two supports on this map. This doesn't account for how heroes work together, since no public data covers that.</p>
         <div class="lineup">${lineup.map((r) => `<a class="slot" href="${heroLink(r.k, 'maps')}" ${tipAttr(`Win ${p1(r.wr)} · pick ${p1(r.pick)} on ${esc(m.name)}<br>${sgn(r.d)}pp vs their usual rating`)}>${avatar(H[r.k])}<span class="rl"><span class="role-dot ${r.role}"></span>${ROLE_LABEL[r.role]}</span><b>${esc(H[r.k].name)}</b><span class="small">${p1(r.wr)}</span></a>`).join('')}</div></div>
-      <div class="cols3" style="margin-top:16px">${ROLES.map(roleTable).join('')}</div>
-      <div class="card"><h3>All maps</h3>${modes.map((mode) => `<div class="sub" style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;margin:10px 0 6px">${esc(mode)}</div><div class="map-grid">${avail.filter((x) => x.mode === mode).map((x) => `<a class="map-card ${x.key === m.key ? 'on' : ''}" href="#/maps/${x.key}" style="background-image:url('${esc(x.img)}')"><span>${esc(x.name)}</span></a>`).join('')}</div>`).join('')}</div>`;
-    view.addEventListener('click', (e) => { const tr = e.target.closest('tr.row'); if (tr && !e.target.closest('a')) location.hash = heroLink(tr.dataset.k, 'maps'); }, { once: true });
+      <div class="cols3" style="margin-top:16px">${ROLES.map(roleTable).join('')}</div>`;
+    $('#map-sel').addEventListener('change', (e) => { location.hash = `#/maps/${e.target.value}`; });
+    $('#mode-filter').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; mapMode = b.dataset.m; viewMaps(m.key); });
+    $('#map-strip .map-card.on')?.scrollIntoView({ block: 'nearest', inline: 'center' });
+    $$('.cols3 tbody', view).forEach((tb) => tb.addEventListener('click', (e) => { const tr = e.target.closest('tr.row'); if (tr && !e.target.closest('a')) location.hash = heroLink(tr.dataset.k, 'maps'); }));
   }
 
   // ========== PATCH ==========

@@ -35,6 +35,17 @@ async function main() {
   const allMaps = await fetchCached(api('/maps'), { offline, ttlHours: 24 * 7 });
   const maps = allMaps.filter((m) => m.uses?.includes('standard') && m.gamemodes?.some((g) => cfg.mapModes.includes(g)));
 
+  // Counterwatch publishes matchup data we can't republish (their terms: personal, non-commercial use),
+  // so we only link to their per-hero pages. Their sitemap gives the exact URL slug for each hero.
+  const cwLinks = {};
+  try {
+    const xml = await fetchCached('https://www.counterwatch.gg/sitemap.xml', { as: 'html', offline, ttlHours: 24 * 7 });
+    const slugs = [...xml.matchAll(/\/stats\/overwatch\/counters\/([a-z0-9-]+)<\/loc>/g)].map((m) => m[1]).filter((s) => !['6v6', 'stadium'].includes(s));
+    const bySquash = Object.fromEntries(slugs.map((s) => [s.replace(/-/g, ''), s]));
+    for (const h of heroes) { const s = bySquash[h.key.replace(/-/g, '')]; if (s) cwLinks[h.key] = s; }
+    log(`▸ Counterwatch links for ${Object.keys(cwLinks).length}/${heroes.length} heroes`);
+  } catch (e) { log(`  (Counterwatch sitemap unavailable: ${e.message})`); }
+
   log('▸ Hero stats per platform / region / rank');
   const stats = {}, mapStats = {};
   let calls = 0;
@@ -89,7 +100,7 @@ async function main() {
     kits, maps: maps.map((m) => ({ key: m.key, name: m.name, mode: m.gamemodes.find((g) => cfg.mapModes.includes(g)), img: m.screenshot, location: m.location })),
     stats, mapStats,
     patches: patches.map((p) => ({ id: p.id, title: p.title, date: p.date, changes: p.changes.filter((c) => c.kind === 'hero').map(slimChange), summary: Object.fromEntries(Object.entries(p.summary).map(([k, s]) => [k, { v: s.verdict, s: s.score, b: s.buffs, n: s.nerfs, u: s.unknown }])), dev: p.dev })),
-    trend, snapshots: snaps.map((s) => s.date),
+    trend, snapshots: snaps.map((s) => s.date), cwLinks,
     config: { platforms: cfg.platforms, regions: cfg.regions, divisions: cfg.divisions, shrinkPick: cfg.shrinkPick, tiers: cfg.tiers.map((t) => ({ tier: t.tier, z: Number.isFinite(t.z) ? t.z : -99 })), gamemode: cfg.gamemode },
     calls,
   };
