@@ -1,0 +1,50 @@
+# Refreshes both sites once a day and saves the Overwatch daily snapshot that Patch impact needs.
+# Never includes the personal-use Counterwatch matchups (--no-counters; src/pages.js also blocks them).
+name: Daily data refresh
+
+on:
+  schedule:
+    - cron: "23 7 * * *"   # every day, 07:23 UTC
+  workflow_dispatch:        # "Run workflow" button on GitHub
+
+permissions:
+  contents: write
+
+concurrency:
+  group: daily-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Overwatch (stats, patch notes, snapshot, archive backfill)
+        id: ow
+        run: node overwatch/build.js --no-counters
+
+      - name: Deadlock
+        id: dl
+        continue-on-error: true
+        run: node src/build.js
+
+      - name: Publish copy for GitHub Pages
+        if: steps.dl.outcome == 'success'
+        run: node src/pages.js
+
+      - name: Commit and push
+        if: always()
+        run: |
+          git config user.name "meta-unbound bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/overwatch/snapshots
+          [ -f data/overwatch/backfill-state.json ] && git add data/overwatch/backfill-state.json
+          [ -d docs ] && git add docs
+          git diff --cached --quiet && echo "Nothing changed" && exit 0
+          git commit -m "Daily data refresh ($(date -u +%F))"
+          git push
