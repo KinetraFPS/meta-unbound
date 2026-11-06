@@ -7,7 +7,7 @@
 <meta name="description" content="Overwatch hero tiers by role, rank, region and map, with patch notes read into buffs and nerfs.">
 <link rel="stylesheet" href="style.css">
 <link rel="stylesheet" href="ow.css">
-<script>try { const t = localStorage.getItem('dma-theme'); if (t) document.documentElement.dataset.theme = t; } catch {}</script>
+<script>/* Dark by default; the header toggle saves light/dark per browser. */ let t = 'dark'; try { t = localStorage.getItem('dma-theme') || 'dark'; } catch {} document.documentElement.dataset.theme = t;</script>
 </head>
 <body>
 <header class="top">

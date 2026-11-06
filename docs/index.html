@@ -6,7 +6,7 @@
 <title>Deadlock Meta Auditor</title>
 <meta name="description" content="Patch-aware Deadlock hero tiers, meta builds, matchups, synergies and draft helper.">
 <link rel="stylesheet" href="style.css?v=78aa19d5fa">
-<script>try { const t = localStorage.getItem('dma-theme'); if (t) document.documentElement.dataset.theme = t; } catch {}</script>
+<script>/* Dark by default; the header toggle saves light/dark per browser. */ let t = 'dark'; try { t = localStorage.getItem('dma-theme') || 'dark'; } catch {} document.documentElement.dataset.theme = t;</script>
 </head>
 <body>
 <header class="top">
