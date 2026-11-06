@@ -9,7 +9,8 @@
     "offline": "node src/build.js --offline",
     "patch": "node src/build.js --patch",
     "serve": "node src/serve.js",
-    "pages": "node src/build.js && node src/pages.js"
+    "pages": "node src/build.js && node overwatch/build.js && node src/pages.js",
+    "build:ow": "node overwatch/build.js"
   },
   "engines": {
     "node": ">=18"

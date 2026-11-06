@@ -1,0 +1,41 @@
+/* Overwatch-specific additions on top of the shared style.css */
+.logo.ow { background: #eb6834; }
+/* role-column tier board */
+.rboard { display: grid; grid-template-columns: 74px repeat(3, minmax(0, 1fr)); gap: 0; background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); }
+.rboard .rh { padding: 10px; font-weight: 700; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--ink-2); border-bottom: 1px solid var(--grid); background: var(--surface-2); }
+.rboard .tl { display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 26px; border-bottom: 1px solid var(--surface); }
+.rboard .tl small { font-size: 10px; font-weight: 600; opacity: .9; }
+.rboard .tl.S { background: var(--t-S); } .rboard .tl.A { background: var(--t-A); } .rboard .tl.B { background: var(--t-B); } .rboard .tl.C { background: var(--t-C); } .rboard .tl.D { background: var(--t-D); }
+:root[data-theme="dark"] .rboard .tl.S, :root[data-theme="dark"] .rboard .tl.D { color: #0b0b0b; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .rboard .tl.S, :root:not([data-theme="light"]) .rboard .tl.D { color: #0b0b0b; } }
+.rboard .cell { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; border-bottom: 1px solid var(--grid); border-left: 1px solid var(--grid); min-height: 88px; align-content: flex-start; }
+.rboard .hcard { width: 92px; }
+.rboard .hcard img, .rboard .hcard .avatar { width: 46px; height: 46px; }
+@media (max-width: 900px) {
+  .rboard { grid-template-columns: 40px minmax(0, 1fr); }
+  .rboard .rh { display: none; }
+  .rboard .tl { grid-row: span 3; font-size: 18px; } .rboard .tl small { display: none; }
+  .rboard .cell::before { content: attr(data-role); width: 100%; font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--muted); letter-spacing: .05em; }
+  .rboard .hcard { width: 78px; }
+}
+.role-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; vertical-align: 1px; }
+.role-dot.tank { background: var(--series-1); } .role-dot.damage { background: var(--series-2); } .role-dot.support { background: var(--series-3); }
+
+/* maps */
+.map-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+.map-card { position: relative; display: block; height: 84px; border-radius: 10px; overflow: hidden; text-decoration: none; color: #fff; background: var(--surface-3) center/cover no-repeat; border: 2px solid transparent; }
+.map-card.on { border-color: var(--accent); }
+.map-card span { position: absolute; inset: auto 0 0 0; padding: 18px 8px 6px; font-size: 12px; font-weight: 600; background: linear-gradient(transparent, rgba(0,0,0,.75)); }
+.map-card small { display: block; font-weight: 500; opacity: .85; text-transform: capitalize; }
+.lineup { display: flex; flex-wrap: wrap; gap: 10px; }
+.lineup .slot { display: flex; flex-direction: column; align-items: center; gap: 4px; width: 104px; padding: 10px 6px; border-radius: 12px; background: var(--surface-2); text-align: center; text-decoration: none; color: var(--ink); }
+.lineup .slot img, .lineup .slot .avatar { width: 56px; height: 56px; border-radius: 12px; }
+.lineup .slot .rl { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; }
+
+/* kit */
+.kit { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.ab { display: grid; grid-template-columns: 40px 1fr; gap: 10px; padding: 10px; border-radius: 10px; background: var(--surface-2); }
+.ab img { width: 40px; height: 40px; border-radius: 8px; background: var(--ink); padding: 4px; }
+.ab b { display: block; } .ab p { margin: 2px 0 0; font-size: 12px; color: var(--ink-2); }
+.dev { margin: 8px 0 4px; padding: 8px 12px; border-left: 3px solid var(--accent); background: var(--surface-2); border-radius: 0 8px 8px 0; font-size: 13px; color: var(--ink-2); }
+.dev b { color: var(--ink); }

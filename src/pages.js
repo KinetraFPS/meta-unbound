@@ -7,5 +7,6 @@ if (!fs.existsSync('dist/data.js')) { console.error('✖ dist/ is empty — run 
 fs.rmSync('docs', { recursive: true, force: true });
 fs.mkdirSync('docs');
 for (const f of fs.readdirSync('dist')) fs.copyFileSync(path.join('dist', f), path.join('docs', f));
+if (fs.existsSync('dist-ow/data.js')) { fs.mkdirSync('docs/overwatch'); for (const f of fs.readdirSync('dist-ow')) fs.copyFileSync(path.join('dist-ow', f), path.join('docs/overwatch', f)); }
 fs.writeFileSync('docs/.nojekyll', ''); // serve files as-is
 console.log('✔ Copied dashboard to docs/ — commit and push to update the GitHub Pages site');

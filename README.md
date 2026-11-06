@@ -26,6 +26,18 @@ The rule-based parser handles "X increased from A to B" well but guesses on qual
 * **Is it worth it?** With `--llm` the Audit tab also replays the rules-only parser and shows both backtests side by side (r, direction accuracy, error), so you can see whether the LLM actually improves forecasts. Lines where the rules and the LLM disagree are listed there too.
 * Requests use `fallbacks: "default"`, so if a safety classifier ever declines a request, the API retries it on a fallback model. If a request fails (bad key, outage), the run continues with rule-based verdicts and skips the LLM for the rest of that run.
 
+## Overwatch
+
+**Live:** https://kinetrafps.github.io/deadlock-meta/overwatch/ — same design, switch games from the header.
+
+```bash
+node overwatch/build.js        # fetch stats + patch notes → dist-ow/ (served at /overwatch/ by node src/serve.js)
+```
+
+* **Data:** Blizzard's official Hero Statistics (win/pick/ban rate) via the community [OverFast API](https://overfast-api.tekrop.fr), competitive role queue, for every platform × region × rank (Bronze–Grandmaster) and per map; hero kits and perks from OverFast; patch notes and developer comments from Blizzard's patch-notes pages (Stadium-only changes excluded).
+* **Views:** role-column tier board (tiers are relative within Tank / Damage / Support), win rate by rank, best maps per hero, strongest lineup per map, kit & perks, patch history with Blizzard's developer comments.
+* **Limits:** no public source has Overwatch matchups, synergies or perk stats, and Blizzard publishes no game counts (rarely picked heroes are pulled toward 50% instead) or history. Each build saves a daily snapshot in `data/overwatch/snapshots/`; once snapshots straddle a patch, "since the patch" changes appear automatically.
+
 ## What's in the dashboard
 
 * **Meta** — tier board (or sortable table, or per-situation view) with risers, fallers and most-banned heroes since the patch. Filter by role, buffed/nerfed, or tag.

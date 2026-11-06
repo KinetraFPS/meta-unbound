@@ -21,6 +21,13 @@ export function htmlToText(html) {
 }
 
 function parseValues(text) {
+  // Overwatch style: "increased to 20% (Up from 15%)", "reduced to 25 (Down from 50)"
+  const ow = text.match(/\bto\s+([+-]?\d*\.?\d+)\s*%?[^()]*\((?:up|down)\s+from\s+([+-]?\d*\.?\d+)/i);
+  if (ow) {
+    const from = num(ow[2]), to = num(ow[1]);
+    const a = Math.abs(from), b = Math.abs(to);
+    return { from, to, rel: a === 0 ? (b === 0 ? 0 : 1) : (b - a) / a };
+  }
   // "... increased from +18 DPS to +22", "reduced from -32% Movement to -28%", "from 0.8s to 1.5s"
   const m = text.match(/\bfrom\s+([+-]?\d*\.?\d+)\s*%?[^]*?\bto\s+([+-]?\d*\.?\d+)/i);
   if (m) {
@@ -43,6 +50,7 @@ function parseValues(text) {
 function classifyDirection(stat, text, vals) {
   if (/^\s*fixed\b|\bfixed (a |some |an )?bug|\bbug\b/i.test(text)) return { direction: 0, reason: 'bug fix', confidence: 0.9 };
   if (/\b(ui|indicator|color|vfx|sfx|sound|visual|tooltip)\b/i.test(stat) && !vals) return { direction: 0, reason: 'cosmetic/UI', confidence: 0.8 };
+  if (/\b(reticle|crosshair|animation|voice ?lines?|settings? menu|options)\b/i.test(text) && !/damage|cooldown|speed|duration|health/i.test(text)) return { direction: 0, reason: 'cosmetic/UI', confidence: 0.75 };
 
   if (vals) {
     let wordSign = 0;

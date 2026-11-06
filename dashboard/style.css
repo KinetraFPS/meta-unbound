@@ -252,3 +252,10 @@ table.heat td.h.cell-pos-3, table.heat td.h.cell-pos-2, table.heat td.h.cell-neg
 /* ---------- tooltip ---------- */
 #tip { position: fixed; pointer-events: none; z-index: 40; background: var(--surface); color: var(--ink); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; font-size: 12px; box-shadow: var(--shadow); opacity: 0; transition: opacity .08s; max-width: 300px; }
 #tip.on { opacity: 1; } #tip b { font-weight: 600; } #tip .r { color: var(--ink-2); }
+
+/* ---------- game switcher (shared by Deadlock + Overwatch sites) ---------- */
+.game-switch { display: inline-flex; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; }
+.game-switch a { padding: 5px 10px; font-size: 12px; color: var(--ink-2); text-decoration: none; }
+.game-switch a + a { border-left: 1px solid var(--border); }
+.game-switch a.on { background: var(--ink); color: var(--surface); font-weight: 600; }
+
