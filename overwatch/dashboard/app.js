@@ -150,7 +150,10 @@
     const picked = [...rows].sort((a, b) => b.pick - a.pick).slice(0, 5);
     const banned = [...rows].sort((a, b) => b.ban - a.ban).slice(0, 5);
     const li = (r, v) => `<li>${heroCell(r.k)}<span class="num">${v}</span></li>`;
-    const rising = D.trend && Object.entries(D.trend.deltas[pk()] || {}).sort((a, b) => b[1][0] - a[1][0]).slice(0, 5);
+    // "Since the patch" only exists for platform/regions that have a snapshot from before the patch;
+    // everywhere else fall back to the highest win rates instead of showing an empty card.
+    const risingAll = Object.entries(D.trend?.deltas?.[pk()] || {}).sort((a, b) => b[1][0] - a[1][0]).slice(0, 5);
+    const rising = risingAll.length && sel.div === 'all' ? risingAll : null; // trend is all-ranks only
     return `<div class="glance">
       <div class="card"><h3><span>${rising ? 'Rising since the patch' : 'Highest win rate'}</span><span class="muted">${rising ? 'change' : 'pick ≥ 2%'}</span></h3><ol>${rising ? rising.map(([k, d]) => `<li>${heroCell(k)}<span class="num ${cls(d[0])}">${sgn(d[0])}pp</span></li>`).join('') : top.map((r) => li(r, p1(r.wr))).join('')}</ol></div>
       <div class="card"><h3><span>Most picked</span><span class="muted">pick rate</span></h3><ol>${picked.map((r) => li(r, p1(r.pick))).join('')}</ol></div>
