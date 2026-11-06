@@ -9,6 +9,7 @@ import path from 'node:path';
 import cfg from './config.js';
 import { fetchCached } from './fetch.js';
 import { loadPatches } from './patchNotes.js';
+import { ensureCounters, loadPrivate } from './counters.js';
 
 const offline = process.argv.includes('--offline');
 const log = (...m) => console.log(...m);
@@ -106,6 +107,16 @@ async function main() {
   };
   fs.mkdirSync('dist-ow', { recursive: true });
   fs.writeFileSync('dist-ow/data.js', `window.OW = ${JSON.stringify(out)};\n`);
+
+  // Personal-use Counterwatch matchups: kept in a SEPARATE file that src/pages.js never publishes.
+  fs.rmSync('dist-ow/counters.js', { force: true });
+  if (!process.argv.includes('--no-counters')) {
+    try {
+      const cw = offline ? loadPrivate() : await ensureCounters({ heroes, latestPatchDate: latestPatch?.date, log });
+      if (cw) fs.writeFileSync('dist-ow/counters.js', `window.OWC = ${JSON.stringify(cw)};\n`);
+      else log('  (no matchup data — run node overwatch/counters.js to add it to your local copy)');
+    } catch (e) { log(`  (Counterwatch fetch failed: ${e.message}; local dashboard built without matchups)`); }
+  }
   for (const f of fs.readdirSync('overwatch/dashboard')) fs.copyFileSync(path.join('overwatch/dashboard', f), path.join('dist-ow', f));
   fs.copyFileSync('dashboard/style.css', 'dist-ow/style.css'); // shared design system with the Deadlock site
   log(`\n✔ Wrote dist-ow/ — ${heroes.length} heroes, ${Object.keys(stats).length} platform/region combos, ${maps.length} maps, ${patches.length} patches, ${snaps.length} snapshot(s)`);

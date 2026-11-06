@@ -1,7 +1,7 @@
 {
-  "name": "deadlock-meta",
+  "name": "meta-unbound",
   "version": "0.1.0",
-  "description": "Audit and visualise the Deadlock meta: patch-aware hero tiers, matchups and synergies with a full evidence trail.",
+  "description": "Deadlock and Overwatch meta auditor: patch-aware tiers, builds, matchups and maps.",
   "type": "module",
   "private": true,
   "scripts": {
@@ -10,7 +10,8 @@
     "patch": "node src/build.js --patch",
     "serve": "node src/serve.js",
     "pages": "node src/build.js && node overwatch/build.js && node src/pages.js",
-    "build:ow": "node overwatch/build.js"
+    "build:ow": "node overwatch/build.js",
+    "counters": "node overwatch/counters.js"
   },
   "engines": {
     "node": ">=18"

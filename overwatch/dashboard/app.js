@@ -119,7 +119,7 @@
   function render() {
     const { route, a, b } = parse();
     $$('#tabs a').forEach((x) => x.classList.toggle('on', x.dataset.route === route));
-    ({ meta: viewMeta, hero: () => viewHero(a, b || 'overview'), maps: () => viewMaps(a), patch: viewPatch, about: viewAbout }[route] || viewMeta)();
+    ({ meta: viewMeta, hero: () => viewHero(a, b || 'overview'), maps: () => viewMaps(a), matchups: () => viewMatchups(a), patch: viewPatch, about: viewAbout }[route] || viewMeta)();
     const key = route + (a || '');
     if (key !== lastKey) { scrollTo(0, 0); lastKey = key; }
     document.title = route === 'hero' && H[a] ? `${H[a].name} — Overwatch Meta` : 'Overwatch Meta Auditor';
@@ -223,6 +223,7 @@
     ({ overview: heroOverview, maps: heroMaps, counters: heroCounters, kit: heroKit, history: heroHistory }[sub] || heroOverview)($('#hero-body'), k);
   }
   function heroCounters(body, k) {
+    if (CW) { body.innerHTML = `${cwNote()}<div id="hx"></div>`; drawExplorer($('#hx', body), k, false); return; }
     const slug = D.cwLinks?.[k], name = esc(H[k].name);
     body.innerHTML = `<div class="card"><h3>Who counters ${name}, and who ${name} counters</h3>
       <p style="margin-top:0;color:var(--ink-2);max-width:760px">Blizzard doesn't publish hero-vs-hero data. The only public source is <b>Counterwatch</b>, which builds matchups from kill feeds in games played by its app users. Their terms only allow personal, non-commercial use, so their data isn't copied here. Open ${name}'s page on their site instead:</p>
@@ -279,6 +280,83 @@
     body.innerHTML = ps.length ? ps.map((p) => { const s = p.summary[k]; return `<div class="card"><h3>${esc(p.title.replace(/^Overwatch Retail Patch Notes – /, ''))} ${verdictPill(s)}</h3>${p.dev?.[k] ? `<div class="dev"><b>Blizzard:</b> ${esc(p.dev[k])}</div>` : ''}${p.changes.filter((c) => c.t === k).map(changeRow).join('')}</div>`; }).join('')
       : '<div class="card"><p class="empty">No balance changes for this hero in the patches we track.</p></div>';
   }
+
+  // ========== MATCHUPS (local only: Counterwatch data for personal use) ==========
+  // CW[a][b].r = how hero a does against hero b, in Counterwatch "duel-share points":
+  // 0 = even, positive = a counters b. Roughly ±7 is the top 10% of all matchups.
+  const CW = window.OWC?.matrix || null;
+  const cwR = (a, b) => CW?.[a]?.[b]?.r ?? (CW?.[b]?.[a] ? -CW[b][a].r : null);
+  const strength = (r) => { const a = Math.abs(r); return a >= 7 ? 'Hard counter' : a >= 3.5 ? 'Strong' : a >= 1.5 ? 'Slight edge' : 'Even'; };
+  const cwNote = () => `<p class="muted small" style="margin:0 0 12px">Counter ratings from <a href="https://www.counterwatch.gg/stats/overwatch" target="_blank" rel="noopener">Counterwatch</a>, fetched ${new Date(window.OWC.fetched).toLocaleDateString()} for personal use (this data stays on your computer, never on the public site). Based on who wins the kill trades when two heroes meet, not on match win rate. 0 = even · 1.5+ slight edge · 3.5+ strong · 7+ hard counter.</p>`;
+  const pairTip = (a, b) => { const e = CW?.[a]?.[b], r = cwR(a, b); if (r == null) return ''; const imp = r >= 0 ? e?.i : CW?.[b]?.[a]?.i; return `<b>${esc(H[a].name)}</b> vs <b>${esc(H[b].name)}</b>: ${sgn(r)} — ${r >= 1.5 ? esc(H[a].name) + ' has the edge' : r <= -1.5 ? esc(H[b].name) + ' has the edge' : 'even'} (${strength(r).toLowerCase()})${imp ? `<br>≈ ${imp}% swing to an otherwise even fight` : ''}${e?.n ? `<br><span class=r>${e.n.toLocaleString()} players · ${esc(e.c || '')} confidence</span>` : ''}`; };
+  function matchList(items, side) {
+    if (!items.length) return '<p class="empty">Nothing notable.</p>';
+    const max = Math.max(7, ...items.map((x) => Math.abs(x.r)));
+    return `<div class="mlist">${items.map((x) => `<a class="mrow" href="${heroLink(x.k, 'counters')}" ${tipAttr(x.tip)}>${avatar(H[x.k])}<span class="nm">${esc(H[x.k].name)}<small>${esc(x.why)}</small></span>
+      <span class="lvl ${side}">${strength(x.r)}</span><svg class="bar" viewBox="0 0 100 8" preserveAspectRatio="none" aria-hidden="true"><rect width="100" height="8" rx="3" fill="var(--surface-2)"/><rect width="${(Math.abs(x.r) / max) * 100}" height="8" rx="3" fill="${side === 'good' ? 'var(--pos-2)' : 'var(--neg-2)'}"/></svg><span class="num ${side === 'good' ? 'up' : 'down'}">${sgn(Math.abs(x.r) * (side === 'good' ? 1 : -1))}</span></a>`).join('')}</div>`;
+  }
+  // Plain-language reason: Counterwatch's estimated swing for the hero that has the edge.
+  const impWhy = (winner, loser) => { const i = CW?.[winner]?.[loser]?.i; const t = CW?.[winner]?.[loser]?.t; return [i ? `≈ +${i}% swing in an even fight` : '', t ? t.toLowerCase() : ''].filter(Boolean).join(' · '); };
+  let mxRole = '';
+  function drawExplorer(el, k, withPicker = true) {
+    const others = D.heroes.filter((h) => h.key !== k && cwR(k, h.key) != null && (!mxRole || h.role === mxRole));
+    const rows = others.map((h) => ({ k: h.key, r: cwR(k, h.key), e: CW[k]?.[h.key] }));
+    const beats = rows.filter((x) => x.r >= 1.5).sort((a, b) => b.r - a.r).slice(0, 12).map((x) => ({ ...x, tip: pairTip(k, x.k), why: impWhy(k, x.k) }));
+    const loses = rows.filter((x) => x.r <= -1.5).sort((a, b) => a.r - b.r).slice(0, 12).map((x) => ({ ...x, tip: pairTip(x.k, k), why: impWhy(x.k, k) }));
+    el.innerHTML = `${withPicker ? `<div class="toolbar"><label class="ctx-pick"><b>Hero</b><select id="mx-hero">${[...D.heroes].sort((a, b) => a.name.localeCompare(b.name)).map((h) => `<option value="${h.key}" ${h.key === k ? 'selected' : ''}>${esc(h.name)}</option>`).join('')}</select></label>` : '<div class="toolbar">'}
+      <div class="seg" id="mx-role"><button data-r="" class="${!mxRole ? 'on' : ''}">All roles</button>${ROLES.map((r) => `<button data-r="${r}" class="${mxRole === r ? 'on' : ''}">${ROLE_LABEL[r]}</button>`).join('')}</div></div>
+      <div class="cols"><div class="card"><h3>${esc(H[k].name)} is good against</h3><p class="muted small" style="margin-top:0">Pick ${esc(H[k].name)} into these heroes.</p>${matchList(beats, 'good')}</div>
+      <div class="card"><h3>${esc(H[k].name)} struggles against</h3><p class="muted small" style="margin-top:0">If the enemy has these, consider swapping off.</p>${matchList(loses, 'bad')}</div></div>`;
+    $('#mx-hero', el)?.addEventListener('change', (e) => { location.hash = `#/matchups/${e.target.value}`; });
+    $('#mx-role', el).addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b) return; mxRole = b.dataset.r; drawExplorer(el, k, withPicker); });
+  }
+  const enemies = new Set(store.get('enemies', []).filter((k) => H[k]));
+  function viewMatchups(focusKey) {
+    if (!CW) { view.innerHTML = `<div class="card"><h2>Matchups</h2><p>Matchup data isn't included on the public site. Run <code>node overwatch/counters.js</code> and <code>node overwatch/build.js</code> on your own computer to add it to your local copy.</p></div>`; return; }
+    const focus = H[focusKey] ? focusKey : store.get('mx-focus', D.heroes[0].key);
+    store.set('mx-focus', focus);
+    const ens = [...enemies];
+    // For each candidate: sum of its rating against every picked enemy.
+    const cand = D.heroes.filter((h) => !enemies.has(h.key)).map((h) => {
+      const per = ens.map((e) => ({ e, r: cwR(h.key, e) ?? 0 }));
+      return { k: h.key, role: h.role, total: per.reduce((s, x) => s + x.r, 0), per };
+    });
+    const pickCol = (role) => {
+      const rs = cand.filter((c) => c.role === role).sort((a, b) => b.total - a.total);
+      const card = (c, bad) => `<a class="mrow" href="${heroLink(c.k, 'counters')}" ${tipAttr(c.per.map((p) => pairTip(c.k, p.e)).join('<hr style="border:0;border-top:1px solid var(--grid);margin:4px 0">'))}>${avatar(H[c.k])}<span class="nm">${esc(H[c.k].name)}<small>${c.per.filter((p) => Math.abs(p.r) >= 1.5).sort((a, b) => Math.abs(b.r) - Math.abs(a.r)).slice(0, 3).map((p) => `${p.r > 0 ? 'beats' : 'weak to'} ${esc(H[p.e].name)}`).join(' · ') || 'no big edges'}</small></span><span class="num ${c.total > 0 ? 'up' : c.total < 0 ? 'down' : ''}" style="font-weight:700">${sgn(c.total)}</span></a>`;
+      return `<div class="card"><h3><span class="role-dot ${role}"></span>${ROLE_LABEL[role]}</h3><div class="sub2">Best picks</div><div class="mlist">${rs.slice(0, 5).map((c) => card(c)).join('')}</div><div class="sub2">Avoid</div><div class="mlist">${rs.slice(-3).reverse().map((c) => card(c, true)).join('')}</div></div>`;
+    };
+    // grid
+    const order = ROLES.flatMap((r) => D.heroes.filter((h) => h.role === r).sort((a, b) => a.name.localeCompare(b.name)).map((h) => h.key));
+    const cs = 14, L = 100, T = 100, n = order.length, W = L + n * cs, Hh = T + n * cs;
+    let cells = '', seps = '';
+    order.forEach((a, i) => order.forEach((b, j) => { if (a === b) return; const r = cwR(a, b); if (r == null) return; const c = divClass(r, [1.5, 3.5, 7]).replace('cell-', '');
+      cells += `<rect class="c" data-a="${a}" data-i="${i}" data-j="${j}" x="${L + j * cs + 1}" y="${T + i * cs + 1}" width="${cs - 2}" height="${cs - 2}" rx="2" style="fill:var(--${c})" ${tipAttr(pairTip(a, b) + '<br><span class=r>Click to open ' + esc(H[a].name) + '</span>')}/>`; }));
+    let idx = 0; for (const r of ROLES) { const cnt = order.filter((k) => H[k].role === r).length; if (idx) seps += `<line x1="${L + idx * cs}" x2="${L + idx * cs}" y1="${T}" y2="${Hh}" stroke="var(--ink)" stroke-width="1.5"/><line x1="${L}" x2="${W}" y1="${T + idx * cs}" y2="${T + idx * cs}" stroke="var(--ink)" stroke-width="1.5"/>`; idx += cnt; }
+    const labels = order.map((k, i) => `<text x="${L - 6}" y="${T + i * cs + cs - 3}" text-anchor="end" font-size="10" fill="var(--ink-2)">${esc(H[k].name)}</text><text transform="translate(${L + i * cs + cs - 3},${T - 6}) rotate(-60)" font-size="10" fill="var(--ink-2)">${esc(H[k].name)}</text>`).join('');
+    view.innerHTML = `
+      <div class="section-head"><div><h1>Matchups</h1><p>Who to pick into the enemy team, and how each hero fares 1-on-1.</p></div></div>
+      ${cwNote()}
+      <div class="card"><h2>Counter the enemy team</h2><p class="muted small" style="margin-top:0">Tap the heroes on the enemy team (up to 5). Each suggestion's score adds up its counter rating against every enemy you picked (higher = better answer). Hover a hero for the details.</p>
+        <div class="team">${ens.map((k) => `<button class="chip on" data-rm="${k}">${esc(H[k].name)}<span class="x">×</span></button>`).join('') || '<span class="empty">No enemies picked yet</span>'}${ens.length ? '<button class="chip" id="en-clear">Clear</button>' : ''}</div>
+        <div class="picker" id="en-pick">${ROLES.map((r) => `<span class="muted small" style="width:100%;margin-top:4px"><span class="role-dot ${r}"></span>${ROLE_LABEL[r]}</span>${D.heroes.filter((h) => h.role === r).sort((a, b) => a.name.localeCompare(b.name)).map((h) => `<button data-k="${h.key}" class="${enemies.has(h.key) ? 'on' : ''}" ${!enemies.has(h.key) && enemies.size >= 5 ? 'disabled' : ''}>${avatar(h)}${esc(h.name)}</button>`).join('')}`).join('')}</div></div>
+      ${ens.length ? `<div class="cols3" style="margin-top:16px">${ROLES.map(pickCol).join('')}</div>` : ''}
+      <div class="card" style="margin-top:16px"><h2>One hero's matchups</h2><div id="mx"></div></div>
+      <div class="card"><details ${store.get('grid-open', false) ? 'open' : ''} id="grid-d"><summary><b>Full matchup grid</b> <span class="muted small">— row hero vs column hero, grouped Tank / Damage / Support</span></summary>
+        <div class="heatwrap" style="margin-top:10px"><svg id="cw-heat" width="${W}" height="${Hh}" role="img" aria-label="Counter rating grid"><rect id="hl-row" class="hl" x="${L}" width="${n * cs}" height="${cs}" y="-100"/><rect id="hl-col" class="hl" y="${T}" height="${n * cs}" width="${cs}" x="-100"/>${labels}${cells}${seps}</svg></div>
+        <div class="legend">Row vs column: ${legendRamp('row is countered (−7)', 'row counters (+7)')}</div></details></div>`;
+    drawExplorer($('#mx'), focus, true);
+    const save = () => store.set('enemies', [...enemies]);
+    $('#en-pick').addEventListener('click', (e) => { const b = e.target.closest('button'); if (!b || b.disabled) return; enemies.has(b.dataset.k) ? enemies.delete(b.dataset.k) : enemies.add(b.dataset.k); save(); viewMatchups(focus); });
+    $$('[data-rm]', view).forEach((b) => b.addEventListener('click', () => { enemies.delete(b.dataset.rm); save(); viewMatchups(focus); }));
+    $('#en-clear')?.addEventListener('click', () => { enemies.clear(); save(); viewMatchups(focus); });
+    $('#grid-d').addEventListener('toggle', (e) => store.set('grid-open', e.target.open));
+    const heat = $('#cw-heat'), hr = $('#hl-row'), hc = $('#hl-col');
+    heat.addEventListener('mouseover', (e) => { const c = e.target.closest('rect.c'); if (!c) return; hr.setAttribute('y', T + c.dataset.i * cs); hc.setAttribute('x', L + c.dataset.j * cs); });
+    heat.addEventListener('mouseleave', () => { hr.setAttribute('y', -100); hc.setAttribute('x', -100); });
+    heat.addEventListener('click', (e) => { const c = e.target.closest('rect.c'); if (c) location.hash = heroLink(c.dataset.a, 'counters'); });
+  }
+  if (CW) $('#tabs a[data-route="patch"]').insertAdjacentHTML('beforebegin', '<a href="#/matchups" data-route="matchups">Matchups <span class="pill" style="font-size:9px;padding:0 5px">local</span></a>');
 
   // ========== MAPS ==========
   let mapMode = '';

@@ -1,4 +1,4 @@
-# Deadlock Meta Auditor
+# Meta Unbound
 
 Patch-aware hero tiers, situations, matchups, synergies and draft picks for Deadlock — with every number traceable to its evidence. Node 18+; the only dependency is the Anthropic SDK, used by the optional `--llm` pass.
 
@@ -12,7 +12,7 @@ node src/build.js --offline                         # rebuild from cache
 npm run pages                                       # rebuild + copy to docs/ for the GitHub Pages site
 ```
 
-**Live dashboard:** https://kinetrafps.github.io/deadlock-meta/ — a snapshot from the last `npm run pages` + push.
+**Live dashboard:** https://kinetrafps.github.io/meta-unbound/ — a snapshot from the last `npm run pages` + push.
 
 > Fan-made tool, not affiliated with or endorsed by Valve. Match data comes from the community API at [deadlock-api.com](https://deadlock-api.com); hero names and images belong to Valve.
 
@@ -28,7 +28,7 @@ The rule-based parser handles "X increased from A to B" well but guesses on qual
 
 ## Overwatch
 
-**Live:** https://kinetrafps.github.io/deadlock-meta/overwatch/ — same design, switch games from the header.
+**Live:** https://kinetrafps.github.io/meta-unbound/overwatch/ — same design, switch games from the header.
 
 ```bash
 node overwatch/build.js        # fetch stats + patch notes → dist-ow/ (served at /overwatch/ by node src/serve.js)
@@ -37,6 +37,18 @@ node overwatch/build.js        # fetch stats + patch notes → dist-ow/ (served 
 * **Data:** Blizzard's official Hero Statistics (win/pick/ban rate) via the community [OverFast API](https://overfast-api.tekrop.fr), competitive role queue, for every platform × region × rank (Bronze–Grandmaster) and per map; hero kits and perks from OverFast; patch notes and developer comments from Blizzard's patch-notes pages (Stadium-only changes excluded).
 * **Views:** role-column tier board (tiers are relative within Tank / Damage / Support), win rate by rank, best maps per hero, strongest lineup per map, kit & perks, patch history with Blizzard's developer comments.
 * **Limits:** no public source has Overwatch matchups, synergies or perk stats, and Blizzard publishes no game counts (rarely picked heroes are pulled toward 50% instead) or history. Each build saves a daily snapshot in `data/overwatch/snapshots/`; once snapshots straddle a patch, "since the patch" changes appear automatically.
+
+### Overwatch matchups (personal copy only)
+
+Counterwatch's hero-vs-hero counter ratings are allowed for personal, non-commercial use only, so they are **never on the public site**. Each person adds them to their own local copy:
+
+```bash
+node overwatch/counters.js     # fetch matchups → data/overwatch/private/ (gitignored); re-run each patch
+node overwatch/build.js        # also refetches automatically when a new patch is out
+node src/serve.js              # open http://localhost:5178/overwatch/ → Matchups tab
+```
+
+Locally you get a **Matchups** tab: pick the enemy team and get the best answers per role (with heroes to avoid), each hero's "good against / struggles against" in plain words (Hard counter / Strong / Slight edge), and a full grid grouped by role. `npm run pages` strips this data and refuses to publish if any of it would slip through.
 
 ## What's in the dashboard
 

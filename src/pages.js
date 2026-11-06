@@ -1,12 +1,33 @@
-// Copies the built dashboard (dist/) into docs/ so GitHub Pages can serve it.
-// Usage: node src/build.js && node src/pages.js   (or: npm run pages), then commit + push docs/.
+// Copies the built dashboards into docs/ so GitHub Pages can serve them.
+// Usage: npm run pages, then commit + push docs/.
+//
+// The Overwatch matchup data (Counterwatch, personal use only) is NEVER published: counters.js is
+// skipped, its <script> tag is removed, and the publish aborts if any of it slipped through.
 import fs from 'node:fs';
 import path from 'node:path';
 
+const PRIVATE = new Set(['counters.js']);
 if (!fs.existsSync('dist/data.js')) { console.error('✖ dist/ is empty — run node src/build.js first'); process.exit(1); }
 fs.rmSync('docs', { recursive: true, force: true });
 fs.mkdirSync('docs');
 for (const f of fs.readdirSync('dist')) fs.copyFileSync(path.join('dist', f), path.join('docs', f));
-if (fs.existsSync('dist-ow/data.js')) { fs.mkdirSync('docs/overwatch'); for (const f of fs.readdirSync('dist-ow')) fs.copyFileSync(path.join('dist-ow', f), path.join('docs/overwatch', f)); }
+if (fs.existsSync('dist-ow/data.js')) {
+  fs.mkdirSync('docs/overwatch');
+  for (const f of fs.readdirSync('dist-ow')) {
+    if (PRIVATE.has(f)) continue;
+    let body = fs.readFileSync(path.join('dist-ow', f));
+    if (f === 'index.html') body = body.toString().replace(/\s*<script src="counters\.js"[^>]*><\/script>/, '');
+    fs.writeFileSync(path.join('docs/overwatch', f), body);
+  }
+}
 fs.writeFileSync('docs/.nojekyll', ''); // serve files as-is
-console.log('✔ Copied dashboard to docs/ — commit and push to update the GitHub Pages site');
+
+// Safety check: no Counterwatch data anywhere in what gets published.
+const leaks = [];
+// Signs of leaked DATA (not code that merely mentions it): the file itself, the data assignment,
+// the matchup matrix, or a page that loads counters.js.
+const LEAK = /window\.OWC\s*=|"matrix":\{"|<script[^>]+src="counters\.js"/;
+const walk = (d) => { for (const f of fs.readdirSync(d)) { const p = path.join(d, f); if (fs.statSync(p).isDirectory()) walk(p); else if (PRIVATE.has(f) || LEAK.test(fs.readFileSync(p, 'utf8'))) leaks.push(p); } };
+walk('docs');
+if (leaks.length) { fs.rmSync('docs', { recursive: true, force: true }); console.error(`✖ Refusing to publish: Counterwatch data found in ${leaks.join(', ')}`); process.exit(1); }
+console.log('✔ Copied dashboards to docs/ (no Counterwatch data) — commit and push to update GitHub Pages');
