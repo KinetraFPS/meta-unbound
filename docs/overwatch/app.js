@@ -226,6 +226,7 @@
     ({ overview: heroOverview, maps: heroMaps, counters: heroCounters, kit: heroKit, history: heroHistory }[sub] || heroOverview)($('#hero-body'), k);
   }
   function heroCounters(body, k) {
+    if (!CW && cwWaiting) { body.innerHTML = cwLoading(); return; }
     if (CW) { body.innerHTML = `${cwNote()}<div id="hx"></div>`; drawExplorer($('#hx', body), k, false); return; }
     const slug = D.cwLinks?.[k], name = esc(H[k].name);
     body.innerHTML = `<div class="card"><h3>Who counters ${name}, and who ${name} counters</h3>
@@ -287,7 +288,23 @@
   // ========== MATCHUPS (local only: Counterwatch data for personal use) ==========
   // CW[a][b].r = how hero a does against hero b, in Counterwatch "duel-share points":
   // 0 = even, positive = a counters b. Roughly ±7 is the top 10% of all matchups.
-  const CW = window.OWC?.matrix || null;
+  let CW = window.OWC?.matrix || null;
+  // Local copies (served by src/serve.js) get matchups automatically. If the server is still
+  // downloading them, wait and fill them in without a reload.
+  const LOCAL = !!window.OWC_LOCAL;
+  let cwWaiting = LOCAL && !CW;
+  const cwLoading = () => `<div class="card"><h2>Loading matchups…</h2><p class="muted">Your local server is downloading the latest matchup data from Counterwatch. The first time takes about 2 minutes. This page updates by itself when it's ready.</p></div>`;
+  if (cwWaiting) (function poll() {
+    fetch('counters-status', { cache: 'no-store' }).then((r) => r.json()).then((st) => {
+      if (st.status === 'ready') {
+        const sc = document.createElement('script');
+        sc.src = 'counters.js?t=' + Date.now();
+        sc.onload = () => { CW = window.OWC?.matrix || null; cwWaiting = false; render(); };
+        document.head.appendChild(sc);
+      } else if (st.status === 'error') { cwWaiting = false; render(); }
+      else setTimeout(poll, 5000);
+    }).catch(() => setTimeout(poll, 10000));
+  })();
   const cwR = (a, b) => CW?.[a]?.[b]?.r ?? (CW?.[b]?.[a] ? -CW[b][a].r : null);
   const strength = (r) => { const a = Math.abs(r); return a >= 7 ? 'Hard counter' : a >= 3.5 ? 'Strong' : a >= 1.5 ? 'Slight edge' : 'Even'; };
   const cwNote = () => `<p class="muted small" style="margin:0 0 12px">Counter ratings from <a href="https://www.counterwatch.gg/stats/overwatch" target="_blank" rel="noopener">Counterwatch</a>, fetched ${new Date(window.OWC.fetched).toLocaleDateString()} for personal use (this data stays on your computer, never on the public site). Based on who wins the kill trades when two heroes meet, not on match win rate. 0 = even · 1.5+ slight edge · 3.5+ strong · 7+ hard counter.</p>`;
@@ -315,7 +332,7 @@
   }
   const enemies = new Set(store.get('enemies', []).filter((k) => H[k]));
   function viewMatchups(focusKey) {
-    if (!CW) { view.innerHTML = `<div class="card"><h2>Matchups</h2><p>Matchup data isn't included on the public site. Run <code>node overwatch/counters.js</code> and <code>node overwatch/build.js</code> on your own computer to add it to your local copy.</p></div>`; return; }
+    if (!CW) { view.innerHTML = cwWaiting ? cwLoading() : `<div class="card"><h2>Matchups</h2><p>${LOCAL ? "Matchup data couldn't be downloaded. Check your internet connection and restart the local server." : "Matchup data isn't included on the public site. Open your local copy (double-click <code>start-local.cmd</code>) to see it."}</p></div>`; return; }
     const focus = H[focusKey] ? focusKey : store.get('mx-focus', D.heroes[0].key);
     store.set('mx-focus', focus);
     const ens = [...enemies];
@@ -359,7 +376,7 @@
     heat.addEventListener('mouseleave', () => { hr.setAttribute('y', -100); hc.setAttribute('x', -100); });
     heat.addEventListener('click', (e) => { const c = e.target.closest('rect.c'); if (c) location.hash = heroLink(c.dataset.a, 'counters'); });
   }
-  if (CW) $('#tabs a[data-route="patch"]').insertAdjacentHTML('beforebegin', '<a href="#/matchups" data-route="matchups">Matchups <span class="pill" style="font-size:9px;padding:0 5px">local</span></a>');
+  if (CW || LOCAL) $('#tabs a[data-route="patch"]').insertAdjacentHTML('beforebegin', '<a href="#/matchups" data-route="matchups">Matchups <span class="pill" style="font-size:9px;padding:0 5px">local</span></a>');
 
   // ========== MAPS ==========
   let mapMode = '';

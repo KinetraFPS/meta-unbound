@@ -11,7 +11,8 @@
     "serve": "node src/serve.js",
     "pages": "node src/build.js && node overwatch/build.js && node src/pages.js",
     "build:ow": "node overwatch/build.js",
-    "counters": "node overwatch/counters.js"
+    "counters": "node overwatch/counters.js",
+    "start": "node src/local.js"
   },
   "engines": {
     "node": ">=18"

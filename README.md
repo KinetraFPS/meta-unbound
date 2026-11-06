@@ -41,15 +41,13 @@ node overwatch/build.js        # fetch stats + patch notes → dist-ow/ (served 
 
 ### Overwatch matchups (personal copy only)
 
-Counterwatch's hero-vs-hero counter ratings are allowed for personal, non-commercial use only, so they are **never on the public site**. Each person adds them to their own local copy:
+Counterwatch's hero-vs-hero counter ratings are allowed for personal, non-commercial use only, so they are **never on the public site**. Each person's local copy loads them automatically:
 
-```bash
-node overwatch/counters.js     # fetch matchups → data/overwatch/private/ (gitignored); re-run each patch
-node overwatch/build.js        # also refetches automatically when a new patch is out
-node src/serve.js              # open http://localhost:5178/overwatch/ → Matchups tab
-```
+* **Windows:** double-click `start-local.cmd` (needs [Node.js](https://nodejs.org)). Anyone else: `npm start`.
+* It updates the dashboards if they're more than a day old, starts the local server and opens http://localhost:5178/overwatch/.
+* The server downloads the matchups in the background the first time (about a minute) and again whenever a new patch is out; the page shows "Loading matchups…" and fills in on its own. Keep the window open while you use the site.
 
-Locally you get a **Matchups** tab: pick the enemy team and get the best answers per role (with heroes to avoid), each hero's "good against / struggles against" in plain words (Hard counter / Strong / Slight edge), and a full grid grouped by role. `npm run pages` strips this data and refuses to publish if any of it would slip through.
+Locally you get a **Matchups** tab: pick the enemy team and get the best answers per role (with heroes to avoid), each hero's "good against / struggles against" in plain words (Hard counter / Strong / Slight edge), and a full grid grouped by role. The data is stored in `data/overwatch/private/` (gitignored); `npm run pages` strips it and refuses to publish if any of it would slip through.
 
 ## What's in the dashboard
 

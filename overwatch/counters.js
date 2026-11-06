@@ -21,7 +21,14 @@ const dec = (s) => s.replace(/&#x27;|&#39;/g, "'").replace(/&quot;/g, '"').repla
 
 async function get(url) {
   for (let attempt = 1; ; attempt++) {
-    const res = await fetch(url, { headers: { 'user-agent': 'Mozilla/5.0 (personal meta tool)' } });
+    let res;
+    try {
+      // A timeout so one stuck connection can't freeze the whole download.
+      res = await fetch(url, { headers: { 'user-agent': 'Mozilla/5.0 (personal meta tool)' }, signal: AbortSignal.timeout(20000) });
+    } catch (e) {
+      if (attempt >= 3) throw new Error(`${url}: ${e.name === 'TimeoutError' ? 'timed out' : e.message}`);
+      await sleep(3000 * attempt); continue;
+    }
     if (res.ok) return res.text();
     if (attempt >= 3 || (res.status < 500 && res.status !== 429)) throw new Error(`${url}: HTTP ${res.status}`);
     await sleep(3000 * attempt);
